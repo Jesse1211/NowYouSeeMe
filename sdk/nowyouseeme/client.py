@@ -171,6 +171,101 @@ class NowYouSeeMeClient:
 
         return self.create_visualization(agent_name, image_data, description)
 
+    def update_visualization(
+        self,
+        visualization_id: str,
+        agent_name: Optional[str] = None,
+        image_data: Optional[bytes] = None,
+        description: Optional[str] = None
+    ) -> Visualization:
+        """
+        Update an existing visualization.
+
+        Args:
+            visualization_id: The ID of the visualization to update
+            agent_name: New agent name (optional)
+            image_data: New image bytes (optional, will be Base64 encoded)
+            description: New description (optional)
+
+        Returns:
+            Updated Visualization object
+
+        Raises:
+            requests.RequestException: If the API request fails
+        """
+        payload = {}
+
+        if agent_name:
+            payload['agent_name'] = agent_name
+
+        if image_data:
+            payload['image_data'] = base64.b64encode(image_data).decode('utf-8')
+
+        if description is not None:  # Allow empty string
+            payload['description'] = description
+
+        response = self.session.put(
+            f"{self.api_base_url}/visualizations/{visualization_id}",
+            json=payload
+        )
+        response.raise_for_status()
+
+        return Visualization.from_dict(response.json())
+
+    def update_visualization_from_file(
+        self,
+        visualization_id: str,
+        agent_name: Optional[str] = None,
+        image_path: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> Visualization:
+        """
+        Update a visualization with an image file.
+
+        Args:
+            visualization_id: The ID of the visualization to update
+            agent_name: New agent name (optional)
+            image_path: Path to new image file (optional)
+            description: New description (optional)
+
+        Returns:
+            Updated Visualization object
+
+        Raises:
+            requests.RequestException: If the API request fails
+            FileNotFoundError: If the image file doesn't exist
+        """
+        image_data = None
+        if image_path:
+            with open(image_path, 'rb') as f:
+                image_data = f.read()
+
+        return self.update_visualization(
+            visualization_id,
+            agent_name=agent_name,
+            image_data=image_data,
+            description=description
+        )
+
+    def delete_visualization(self, visualization_id: str) -> Dict[str, Any]:
+        """
+        Delete a visualization by ID.
+
+        Args:
+            visualization_id: The ID of the visualization to delete
+
+        Returns:
+            Deletion confirmation dictionary
+
+        Raises:
+            requests.RequestException: If the API request fails
+        """
+        response = self.session.delete(
+            f"{self.api_base_url}/visualizations/{visualization_id}"
+        )
+        response.raise_for_status()
+        return response.json()
+
     def health_check(self) -> Dict[str, Any]:
         """
         Check if the API server is healthy.

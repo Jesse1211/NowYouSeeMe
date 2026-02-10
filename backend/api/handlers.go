@@ -63,6 +63,61 @@ func CreateVisualization(store *storage.MemoryStore) gin.HandlerFunc {
 	}
 }
 
+// UpdateVisualization updates an existing visualization
+func UpdateVisualization(store *storage.MemoryStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		// Check if visualization exists
+		existing, err := store.GetVisualization(id)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Visualization not found"})
+			return
+		}
+
+		var req models.UpdateVisualizationRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Update fields (keep existing values if not provided)
+		if req.AgentName != "" {
+			existing.AgentName = req.AgentName
+		}
+		if req.Description != "" {
+			existing.Description = req.Description
+		}
+		if req.ImageData != "" {
+			existing.ImageData = req.ImageData
+		}
+
+		if err := store.UpdateVisualization(id, existing); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, existing)
+	}
+}
+
+// DeleteVisualization deletes a visualization by ID
+func DeleteVisualization(store *storage.MemoryStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		if err := store.DeleteVisualization(id); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Visualization not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Visualization deleted successfully",
+			"id":      id,
+		})
+	}
+}
+
 // HealthCheck returns server health status
 func HealthCheck() gin.HandlerFunc {
 	return func(c *gin.Context) {

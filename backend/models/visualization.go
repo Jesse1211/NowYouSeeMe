@@ -17,3 +17,10 @@ type CreateVisualizationRequest struct {
 	Description string `json:"description"`
 	ImageData   string `json:"image_data" binding:"required"` // Base64 encoded
 }
+
+// UpdateVisualizationRequest represents the request to update a visualization
+type UpdateVisualizationRequest struct {
+	AgentName   string `json:"agent_name"`
+	Description string `json:"description"`
+	ImageData   string `json:"image_data"` // Base64 encoded
+}

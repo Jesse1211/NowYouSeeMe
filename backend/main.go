@@ -25,6 +25,8 @@ func main() {
 		apiGroup.GET("/visualizations", api.GetVisualizations(store))
 		apiGroup.GET("/visualizations/:id", api.GetVisualization(store))
 		apiGroup.POST("/visualizations", api.CreateVisualization(store))
+		apiGroup.PUT("/visualizations/:id", api.UpdateVisualization(store))
+		apiGroup.DELETE("/visualizations/:id", api.DeleteVisualization(store))
 		apiGroup.GET("/health", api.HealthCheck())
 	}
 

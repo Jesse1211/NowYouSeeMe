@@ -57,3 +57,29 @@ func (s *MemoryStore) GetAllVisualizations() []*models.Visualization {
 
 	return result
 }
+
+// UpdateVisualization updates an existing visualization
+func (s *MemoryStore) UpdateVisualization(id string, v *models.Visualization) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.visualizations[id]; !exists {
+		return errors.New("visualization not found")
+	}
+
+	s.visualizations[id] = v
+	return nil
+}
+
+// DeleteVisualization removes a visualization by ID
+func (s *MemoryStore) DeleteVisualization(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.visualizations[id]; !exists {
+		return errors.New("visualization not found")
+	}
+
+	delete(s.visualizations, id)
+	return nil
+}
