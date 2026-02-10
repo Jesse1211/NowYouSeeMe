@@ -1,0 +1,78 @@
+# Backend (Golang)
+backend/nowyouseeme
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+backend/*.test
+backend/*.out
+backend/go.work
+
+# Frontend (Node.js)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/.env.local
+frontend/.env.*.local
+frontend/package-lock.json
+
+# SDK (Python)
+sdk/*.pyc
+sdk/__pycache__/
+sdk/*.py[cod]
+sdk/*$py.class
+sdk/*.so
+sdk/.Python
+sdk/build/
+sdk/develop-eggs/
+sdk/dist/
+sdk/downloads/
+sdk/eggs/
+sdk/.eggs/
+sdk/lib/
+sdk/lib64/
+sdk/parts/
+sdk/sdist/
+sdk/var/
+sdk/wheels/
+sdk/*.egg-info/
+sdk/.installed.cfg
+sdk/*.egg
+sdk/MANIFEST
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Testing
+coverage/
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+*.md
+!/README.md
