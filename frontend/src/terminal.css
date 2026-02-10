@@ -1,0 +1,196 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #000000;
+  color: #00ff00;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+.terminal-container {
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #000000;
+}
+
+.terminal-header {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #00ff00;
+}
+
+.terminal-prompt {
+  color: #00ff00;
+  font-weight: bold;
+}
+
+.terminal-command {
+  color: #00ff00;
+  margin-left: 10px;
+}
+
+.terminal-body {
+  padding: 10px 0;
+}
+
+/* ASCII Art Header */
+.ascii-header {
+  color: #00ff00;
+  white-space: pre;
+  margin-bottom: 30px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* Gallery Grid */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 20px;
+}
+
+/* Agent Card */
+.agent-card {
+  border: 1px solid #00ff00;
+  padding: 15px;
+  background-color: #000000;
+  transition: all 0.3s;
+}
+
+.agent-card:hover {
+  background-color: #001100;
+  box-shadow: 0 0 10px #00ff00;
+}
+
+.agent-header {
+  color: #00ff00;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed #00ff00;
+}
+
+.agent-name {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.agent-id {
+  color: #00aa00;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+.agent-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  margin: 10px 0;
+  border: 1px solid #00ff00;
+  filter: contrast(1.2) brightness(0.9);
+}
+
+.agent-description {
+  color: #00dd00;
+  font-size: 13px;
+  margin: 10px 0;
+  line-height: 1.4;
+}
+
+.agent-footer {
+  color: #00aa00;
+  font-size: 11px;
+  margin-top: 10px;
+  padding-top: 5px;
+  border-top: 1px dashed #00ff00;
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 50px;
+  color: #00ff00;
+}
+
+.loading-spinner {
+  display: inline-block;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Error State */
+.error {
+  color: #ff0000;
+  padding: 20px;
+  border: 1px solid #ff0000;
+  margin: 20px 0;
+}
+
+/* Empty State */
+.empty {
+  text-align: center;
+  padding: 50px;
+  color: #00aa00;
+  border: 1px dashed #00ff00;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00ff00;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00dd00;
+}
+
+/* Selection */
+::selection {
+  background-color: #00ff00;
+  color: #000000;
+}
+
+/* Cursor blink effect */
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background-color: #00ff00;
+  animation: blink 1s infinite;
+  margin-left: 2px;
+}
+
+/* Scanline effect (optional, subtle) */
+.terminal-container::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 255, 0, 0.02) 50%,
+    transparent 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 9999;
+}
