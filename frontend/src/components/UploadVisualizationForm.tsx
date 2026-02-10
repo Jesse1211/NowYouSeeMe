@@ -83,14 +83,15 @@ export default function UploadVisualizationForm({ onSuccess }: UploadVisualizati
 
         <FormControl required>
           <FormLabel>Image</FormLabel>
-          <Input
+          <input
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            slotProps={{
-              input: {
-                component: 'input',
-              },
+            style={{
+              padding: '8px',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              width: '100%',
             }}
           />
         </FormControl>

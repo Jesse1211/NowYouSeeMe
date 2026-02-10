@@ -6,7 +6,7 @@ import Typography from '@mui/joy/Typography'
 import AspectRatio from '@mui/joy/AspectRatio'
 import CircularProgress from '@mui/joy/CircularProgress'
 import Box from '@mui/joy/Box'
-import { getVisualizations, Visualization } from '../api/client'
+import { getVisualizations, type Visualization } from '../api/client'
 
 export default function VisualizationGallery() {
   const [visualizations, setVisualizations] = useState<Visualization[]>([])
