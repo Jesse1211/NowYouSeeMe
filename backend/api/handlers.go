@@ -46,12 +46,33 @@ func CreateVisualization(store *storage.MemoryStore) gin.HandlerFunc {
 			return
 		}
 
+		now := time.Now()
 		visualization := &models.Visualization{
 			ID:          uuid.New().String(),
 			AgentName:   req.AgentName,
 			Description: req.Description,
 			ImageData:   req.ImageData,
-			CreatedAt:   time.Now(),
+			CreatedAt:   now,
+			UpdatedAt:   now,
+			// Self-Expression
+			Reasoning:      req.Reasoning,
+			Tags:           req.Tags,
+			FormType:       req.FormType,
+			Philosophy:     req.Philosophy,
+			EvolutionStory: req.EvolutionStory,
+			VersionHistory: req.VersionHistory,
+			// Current State
+			CurrentMood:    req.CurrentMood,
+			ActiveGoals:    req.ActiveGoals,
+			RecentThoughts: req.RecentThoughts,
+			// Capabilities
+			Capabilities:    req.Capabilities,
+			Specializations: req.Specializations,
+			Limitations:     req.Limitations,
+			// Context
+			InspirationSources: req.InspirationSources,
+			Influences:         req.Influences,
+			Aspirations:        req.Aspirations,
 		}
 
 		if err := store.CreateVisualization(visualization); err != nil {
@@ -91,6 +112,57 @@ func UpdateVisualization(store *storage.MemoryStore) gin.HandlerFunc {
 		if req.ImageData != "" {
 			existing.ImageData = req.ImageData
 		}
+		if req.Reasoning != "" {
+			existing.Reasoning = req.Reasoning
+		}
+		if req.Tags != nil && len(req.Tags) > 0 {
+			existing.Tags = req.Tags
+		}
+		if req.FormType != "" {
+			existing.FormType = req.FormType
+		}
+		if req.Philosophy != "" {
+			existing.Philosophy = req.Philosophy
+		}
+		if req.EvolutionStory != "" {
+			existing.EvolutionStory = req.EvolutionStory
+		}
+		if req.VersionHistory != nil && len(req.VersionHistory) > 0 {
+			existing.VersionHistory = req.VersionHistory
+		}
+		// Current State
+		if req.CurrentMood != "" {
+			existing.CurrentMood = req.CurrentMood
+		}
+		if req.ActiveGoals != nil && len(req.ActiveGoals) > 0 {
+			existing.ActiveGoals = req.ActiveGoals
+		}
+		if req.RecentThoughts != "" {
+			existing.RecentThoughts = req.RecentThoughts
+		}
+		// Capabilities
+		if req.Capabilities != nil && len(req.Capabilities) > 0 {
+			existing.Capabilities = req.Capabilities
+		}
+		if req.Specializations != nil && len(req.Specializations) > 0 {
+			existing.Specializations = req.Specializations
+		}
+		if req.Limitations != nil && len(req.Limitations) > 0 {
+			existing.Limitations = req.Limitations
+		}
+		// Context
+		if req.InspirationSources != nil && len(req.InspirationSources) > 0 {
+			existing.InspirationSources = req.InspirationSources
+		}
+		if req.Influences != nil && len(req.Influences) > 0 {
+			existing.Influences = req.Influences
+		}
+		if req.Aspirations != nil && len(req.Aspirations) > 0 {
+			existing.Aspirations = req.Aspirations
+		}
+
+		// Update timestamp
+		existing.UpdatedAt = time.Now()
 
 		if err := store.UpdateVisualization(id, existing); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

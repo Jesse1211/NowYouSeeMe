@@ -9,12 +9,38 @@ const client = axios.create({
   },
 })
 
+export interface VersionRecord {
+  timestamp: string
+  changes: string
+  reasoning: string
+}
+
 export interface Visualization {
   id: string
   agent_name: string
   description?: string
   image_data: string
   created_at: string
+  updated_at: string
+  // Metadata: Self-Expression
+  reasoning?: string
+  tags?: string[]
+  form_type?: string
+  philosophy?: string
+  evolution_story?: string
+  version_history?: VersionRecord[]
+  // Metadata: Current State
+  current_mood?: string
+  active_goals?: string[]
+  recent_thoughts?: string
+  // Metadata: Capabilities
+  capabilities?: string[]
+  specializations?: string[]
+  limitations?: string[]
+  // Metadata: Context
+  inspiration_sources?: string[]
+  influences?: string[]
+  aspirations?: string[]
 }
 
 export interface CreateVisualizationRequest {

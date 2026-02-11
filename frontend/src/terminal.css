@@ -96,11 +96,143 @@ body {
   filter: contrast(1.2) brightness(0.9);
 }
 
+.agent-form-type {
+  color: #00cc00;
+  font-size: 10px;
+  margin-top: 3px;
+  font-style: italic;
+}
+
+.agent-reasoning {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00ff00;
+  background-color: rgba(0, 255, 0, 0.05);
+}
+
+.reasoning-label {
+  color: #00ff00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.reasoning-text {
+  color: #00dd00;
+  font-size: 12px;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.agent-philosophy {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00cc00;
+  background-color: rgba(0, 204, 0, 0.05);
+}
+
+.philosophy-label {
+  color: #00cc00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.philosophy-text {
+  color: #00dd00;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.agent-evolution {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00aa00;
+  background-color: rgba(0, 170, 0, 0.05);
+}
+
+.evolution-label {
+  color: #00aa00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.evolution-text {
+  color: #00dd00;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .agent-description {
   color: #00dd00;
   font-size: 13px;
   margin: 10px 0;
   line-height: 1.4;
+}
+
+.agent-tags {
+  margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  color: #00cc00;
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 1px solid #00aa00;
+  background-color: rgba(0, 170, 0, 0.1);
+}
+
+.agent-timeline {
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid #00ff00;
+  background-color: rgba(0, 255, 0, 0.03);
+}
+
+.timeline-header {
+  color: #00ff00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.timeline-entry {
+  margin: 8px 0;
+  padding: 6px 0;
+  border-bottom: 1px dotted #00aa00;
+}
+
+.timeline-entry:last-child {
+  border-bottom: none;
+}
+
+.timeline-timestamp {
+  color: #00ff00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.timeline-changes {
+  color: #00dd00;
+  font-size: 11px;
+  margin-left: 10px;
+  margin-bottom: 2px;
+}
+
+.timeline-reasoning {
+  color: #00cc00;
+  font-size: 11px;
+  margin-left: 10px;
+  font-style: italic;
 }
 
 .agent-footer {
@@ -175,6 +307,212 @@ body {
   background-color: #00ff00;
   animation: blink 1s infinite;
   margin-left: 2px;
+}
+
+/* Current State */
+.agent-state {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00ee00;
+  background-color: rgba(0, 238, 0, 0.05);
+}
+
+.state-label {
+  color: #00ee00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.state-text {
+  color: #00dd00;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Goals */
+.agent-goals {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00cc00;
+  background-color: rgba(0, 204, 0, 0.05);
+}
+
+.goals-label {
+  color: #00cc00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.goal-item {
+  color: #00dd00;
+  font-size: 11px;
+  margin: 3px 0;
+  padding-left: 5px;
+}
+
+/* Thoughts */
+.agent-thoughts {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00bb00;
+  background-color: rgba(0, 187, 0, 0.05);
+}
+
+.thoughts-label {
+  color: #00bb00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.thoughts-text {
+  color: #00dd00;
+  font-size: 12px;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Capabilities */
+.agent-capabilities {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00dd00;
+  background-color: rgba(0, 221, 0, 0.05);
+}
+
+.capabilities-label {
+  color: #00dd00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.capability-item {
+  color: #00cc00;
+  font-size: 11px;
+  margin: 3px 0;
+  padding-left: 5px;
+}
+
+/* Specializations */
+.agent-specializations {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00cc00;
+  background-color: rgba(0, 204, 0, 0.05);
+}
+
+.specializations-label {
+  color: #00cc00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.specialization-item {
+  color: #00ee00;
+  font-size: 11px;
+  margin: 3px 0;
+  padding-left: 5px;
+}
+
+/* Limitations */
+.agent-limitations {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00aa00;
+  background-color: rgba(0, 170, 0, 0.05);
+}
+
+.limitations-label {
+  color: #00aa00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.limitation-item {
+  color: #00bb00;
+  font-size: 11px;
+  margin: 3px 0;
+  padding-left: 5px;
+}
+
+/* Inspiration */
+.agent-inspiration {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00dd00;
+  background-color: rgba(0, 221, 0, 0.05);
+}
+
+.inspiration-label {
+  color: #00dd00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.inspiration-item {
+  color: #00cc00;
+  font-size: 11px;
+  margin: 3px 0;
+  padding-left: 5px;
+}
+
+/* Influences */
+.agent-influences {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00cc00;
+  background-color: rgba(0, 204, 0, 0.05);
+}
+
+.influences-label {
+  color: #00cc00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.influence-item {
+  color: #00dd00;
+  font-size: 11px;
+  margin: 3px 0;
+  padding-left: 5px;
+}
+
+/* Aspirations */
+.agent-aspirations {
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 2px solid #00ee00;
+  background-color: rgba(0, 238, 0, 0.05);
+}
+
+.aspirations-label {
+  color: #00ee00;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+
+.aspiration-item {
+  color: #00dd00;
+  font-size: 11px;
+  margin: 3px 0;
+  padding-left: 5px;
 }
 
 /* Scanline effect (optional, subtle) */
