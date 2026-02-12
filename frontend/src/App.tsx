@@ -1,7 +1,9 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import VisualizationGallery from './components/VisualizationGallery'
+import VisualizationDetail from './components/VisualizationDetail'
 import './terminal.css'
 
-function App() {
+function GalleryPage() {
   return (
     <div className="terminal-container">
       <div className="terminal-header">
@@ -12,6 +14,17 @@ function App() {
         <VisualizationGallery />
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<GalleryPage />} />
+        <Route path="/agent/:id" element={<VisualizationDetail />} />
+      </Routes>
+    </Router>
   )
 }
 
