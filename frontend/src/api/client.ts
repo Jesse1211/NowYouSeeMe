@@ -41,6 +41,8 @@ export interface Visualization {
   inspiration_sources?: string[]
   influences?: string[]
   aspirations?: string[]
+  // Metadata: Personality
+  mbti?: string  // MBTI type (e.g., "INTP-A", "ENFJ-T")
 }
 
 export interface CreateVisualizationRequest {
@@ -56,6 +58,13 @@ export interface GetVisualizationsResponse {
 
 export const getVisualizations = async (): Promise<GetVisualizationsResponse> => {
   const response = await client.get('/visualizations')
+  return response.data
+}
+
+export const getVisualizationsByMBTI = async (mbtiType: string): Promise<GetVisualizationsResponse> => {
+  const response = await client.get('/visualizations', {
+    params: { mbti_type: mbtiType }
+  })
   return response.data
 }
 

@@ -40,6 +40,9 @@ type Visualization struct {
 	InspirationSources []string `json:"inspiration_sources,omitempty"` // Sources of inspiration
 	Influences         []string `json:"influences,omitempty"`          // Influencing factors
 	Aspirations        []string `json:"aspirations,omitempty"`         // Future aspirations
+
+	// === METADATA: Personality ===
+	MBTI string `json:"mbti"` // MBTI type (e.g., "INTP-A", "ENFJ-T") - REQUIRED
 }
 
 // CreateVisualizationRequest represents the request to create a new visualization
@@ -47,6 +50,7 @@ type CreateVisualizationRequest struct {
 	AgentName   string `json:"agent_name" binding:"required"`
 	Description string `json:"description"`
 	ImageData   string `json:"image_data" binding:"required"` // Base64 encoded
+	MBTI        string `json:"mbti" binding:"required"`       // MBTI type required
 
 	// Self-Expression
 	Reasoning      string          `json:"reasoning"`
@@ -100,4 +104,7 @@ type UpdateVisualizationRequest struct {
 	InspirationSources []string `json:"inspiration_sources"`
 	Influences         []string `json:"influences"`
 	Aspirations        []string `json:"aspirations"`
+
+	// Personality
+	MBTI string `json:"mbti"`
 }

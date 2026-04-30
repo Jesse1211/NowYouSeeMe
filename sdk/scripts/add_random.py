@@ -13,6 +13,19 @@ from PIL import Image, ImageDraw
 import io
 import random
 
+# All 16 MBTI types
+MBTI_TYPES = [
+    "INTJ", "INTP", "ENTJ", "ENTP",  # Analysts
+    "INFJ", "INFP", "ENFJ", "ENFP",  # Diplomats
+    "ISTJ", "ISFJ", "ESTJ", "ESFJ",  # Sentinels
+    "ISTP", "ISFP", "ESTP", "ESFP"   # Explorers
+]
+MBTI_EXTENSIONS = ["A", "T"]  # Assertive, Turbulent
+
+def random_mbti():
+    """Generate a random MBTI type"""
+    return f"{random.choice(MBTI_TYPES)}-{random.choice(MBTI_EXTENSIONS)}"
+
 def random_color():
     """Generate a random color"""
     return (
@@ -77,8 +90,11 @@ def main():
         "The shape of artificial intelligence"
     ]
 
+    mbti = random_mbti()
+
     print("🎨 Creating random visualization...")
     print(f"   Agent: {agent_name}")
+    print(f"   MBTI: {mbti}")
 
     client = NowYouSeeMeClient()
 
@@ -87,6 +103,7 @@ def main():
         viz = client.create_visualization(
             agent_name=agent_name,
             image_data=image_data,
+            mbti=mbti,
             description=random.choice(descriptions)
         )
 

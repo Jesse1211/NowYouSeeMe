@@ -4,16 +4,36 @@ import (
 	"net/http"
 	"nowyouseeme/models"
 	"nowyouseeme/storage"
+	"nowyouseeme/validation"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
-// GetVisualizations returns all visualizations
+// GetVisualizations returns all visualizations, optionally filtered by MBTI type
 func GetVisualizations(store *storage.MemoryStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Get optional MBTI type filter (without extension, e.g., "INTP")
+		mbtiType := c.Query("mbti_type")
+
 		visualizations := store.GetAllVisualizations()
+
+		// Filter by MBTI type if provided
+		if mbtiType != "" {
+			filtered := make([]*models.Visualization, 0)
+			for _, viz := range visualizations {
+				// Extract type from full MBTI (e.g., "INTP-A" -> "INTP")
+				if len(viz.MBTI) >= 4 {
+					vizType := viz.MBTI[:4]
+					if vizType == mbtiType {
+						filtered = append(filtered, viz)
+					}
+				}
+			}
+			visualizations = filtered
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"visualizations": visualizations,
 			"count":          len(visualizations),
@@ -46,6 +66,12 @@ func CreateVisualization(store *storage.MemoryStore) gin.HandlerFunc {
 			return
 		}
 
+		// Validate MBTI format
+		if err := validation.ValidateMBTI(req.MBTI); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		now := time.Now()
 		visualization := &models.Visualization{
 			ID:          uuid.New().String(),
@@ -73,6 +99,8 @@ func CreateVisualization(store *storage.MemoryStore) gin.HandlerFunc {
 			InspirationSources: req.InspirationSources,
 			Influences:         req.Influences,
 			Aspirations:        req.Aspirations,
+			// Personality
+			MBTI: req.MBTI,
 		}
 
 		if err := store.CreateVisualization(visualization); err != nil {
@@ -98,6 +126,12 @@ func UpdateVisualization(store *storage.MemoryStore) gin.HandlerFunc {
 
 		var req models.UpdateVisualizationRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Validate MBTI format if provided
+		if err := validation.ValidateMBTI(req.MBTI); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -159,6 +193,10 @@ func UpdateVisualization(store *storage.MemoryStore) gin.HandlerFunc {
 		}
 		if req.Aspirations != nil && len(req.Aspirations) > 0 {
 			existing.Aspirations = req.Aspirations
+		}
+		// Personality
+		if req.MBTI != "" {
+			existing.MBTI = req.MBTI
 		}
 
 		// Update timestamp

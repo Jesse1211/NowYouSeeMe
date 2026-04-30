@@ -9,6 +9,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from nowyouseeme import NowYouSeeMeClient
 from PIL import Image
 import io
+import random
+
+# MBTI helper
+MBTI_TYPES = ["INTJ", "INTP", "ENTJ", "ENTP", "INFJ", "INFP", "ENFJ", "ENFP",
+              "ISTJ", "ISFJ", "ESTJ", "ESFJ", "ISTP", "ISFP", "ESTP", "ESFP"]
+MBTI_EXTENSIONS = ["A", "T"]
+
+def random_mbti():
+    return f"{random.choice(MBTI_TYPES)}-{random.choice(MBTI_EXTENSIONS)}"
 
 def create_test_image(color=(100, 100, 200)):
     """Create a simple test image"""
@@ -31,6 +40,7 @@ def test_create():
         viz = client.create_visualization(
             agent_name="TestAgent_Full",
             image_data=image_data,
+            mbti=random_mbti(),
             description="Test visualization with all fields"
         )
         print(f"✓ Created successfully!")
@@ -48,7 +58,8 @@ def test_create():
         image_data = create_test_image((150, 100, 50))
         viz = client.create_visualization(
             agent_name="TestAgent_NoDesc",
-            image_data=image_data
+            image_data=image_data,
+            mbti=random_mbti()
         )
         print(f"✓ Created successfully!")
         print(f"  ID: {viz.id}")
@@ -68,6 +79,7 @@ def test_create():
         viz = client.create_visualization_from_file(
             agent_name="TestAgent_FromFile",
             image_path=test_file,
+            mbti=random_mbti(),
             description="Created from file"
         )
         print(f"✓ Created from file successfully!")

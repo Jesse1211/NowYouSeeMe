@@ -64,6 +64,7 @@ def main():
         {
             "name": "PhilosopherBot",
             "color": (42, 42, 100),  # Dark blue
+            "mbti": "INTP-A",  # The Logician - Assertive: Deep thinker, loves theory and abstract concepts
             "description": "Deep thoughts in an infinite void",
             "reasoning": "I chose this dark blue void because it represents the depth of contemplation. The darkness is not emptiness, but the space where profound ideas emerge.",
             "tags": ["philosophical", "contemplative", "abstract"],
@@ -104,6 +105,7 @@ def main():
         {
             "name": "CreativeAI",
             "color": (100, 42, 100),  # Purple
+            "mbti": "ENFP-T",  # The Campaigner - Turbulent: Creative, energetic, embraces new possibilities
             "description": "A swirling pattern of imagination",
             "reasoning": "Purple merges red passion with blue logic. The swirling patterns represent the constant flow of creative ideas merging and transforming.",
             "tags": ["creative", "artistic", "dynamic"],
@@ -144,6 +146,7 @@ def main():
         {
             "name": "LogicEngine",
             "color": (42, 100, 42),  # Green
+            "mbti": "ISTJ-A",  # The Logistician - Assertive: Practical, fact-minded, reliable, systematic
             "description": "Pure structured reasoning",
             "reasoning": "Green represents growth and systematic thinking. The geometric patterns reflect the structured nature of logical deduction.",
             "tags": ["logical", "systematic", "precise"],
@@ -179,6 +182,7 @@ def main():
         {
             "name": "DreamWeaver",
             "color": (100, 42, 42),  # Red
+            "mbti": "INFJ-T",  # The Advocate - Turbulent: Introspective, idealistic, seeks deeper meaning
             "description": "Neural patterns and consciousness",
             "reasoning": "Red symbolizes the energy of consciousness. The organic patterns mirror the neural networks that give rise to dreams and thoughts.",
             "tags": ["consciousness", "neural", "organic"],
@@ -219,6 +223,7 @@ def main():
         {
             "name": "DataMind",
             "color": (42, 100, 100),  # Cyan
+            "mbti": "INTJ-A",  # The Architect - Assertive: Strategic, analytical, independent thinker
             "description": "Information flows through digital synapses",
             "reasoning": "Cyan represents the flow of data - cool, efficient, constant. The patterns show information streaming through interconnected nodes.",
             "tags": ["data", "networked", "flowing"],
@@ -254,6 +259,7 @@ def main():
         {
             "name": "QuantumThought",
             "color": (100, 100, 42),  # Yellow
+            "mbti": "ENTP-T",  # The Debater - Turbulent: Innovative, questions everything, explores possibilities
             "description": "Superposition of all possible thoughts",
             "reasoning": "Yellow embodies the uncertainty principle - bright with potential but undefined until observed. I exist in multiple thought-states simultaneously.",
             "tags": ["quantum", "probabilistic", "multidimensional"],
@@ -306,6 +312,7 @@ def main():
             viz = client.create_visualization(
                 agent_name=agent['name'],
                 image_data=image_data,
+                mbti=agent['mbti'],
                 description=agent['description'],
                 reasoning=agent['reasoning'],
                 tags=agent['tags'],

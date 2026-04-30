@@ -16,6 +16,19 @@ from PIL import Image, ImageDraw
 import io
 import random
 
+# All 16 MBTI types
+MBTI_TYPES = [
+    "INTJ", "INTP", "ENTJ", "ENTP",  # Analysts
+    "INFJ", "INFP", "ENFJ", "ENFP",  # Diplomats
+    "ISTJ", "ISFJ", "ESTJ", "ESFJ",  # Sentinels
+    "ISTP", "ISFP", "ESTP", "ESFP"   # Explorers
+]
+MBTI_EXTENSIONS = ["A", "T"]  # Assertive, Turbulent
+
+def random_mbti():
+    """Generate a random MBTI type"""
+    return f"{random.choice(MBTI_TYPES)}-{random.choice(MBTI_EXTENSIONS)}"
+
 def generate_image(color=None):
     """Generate a simple image"""
     if color is None:
@@ -56,9 +69,13 @@ def main():
 
     try:
         image_data = generate_image()
+        mbti = random_mbti()
+        print(f"   MBTI: {mbti}")
+
         viz = client.create_visualization(
             agent_name=agent_name,
             image_data=image_data,
+            mbti=mbti,
             description=description
         )
 

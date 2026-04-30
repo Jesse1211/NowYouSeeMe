@@ -2,6 +2,20 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getVisualization, type Visualization } from '../api/client'
 
+const MBTI_CATEGORIES: Record<string, string> = {
+  'ISTJ': 'Sentinels', 'ISFJ': 'Sentinels', 'ESTJ': 'Sentinels', 'ESFJ': 'Sentinels',
+  'ISTP': 'Explorers', 'ISFP': 'Explorers', 'ESTP': 'Explorers', 'ESFP': 'Explorers',
+  'INFJ': 'Diplomats', 'INFP': 'Diplomats', 'ENFJ': 'Diplomats', 'ENFP': 'Diplomats',
+  'INTJ': 'Analysts', 'INTP': 'Analysts', 'ENTJ': 'Analysts', 'ENTP': 'Analysts',
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'Sentinels': '#d9eaf0',
+  'Explorers': '#f9eed7',
+  'Diplomats': '#d6ece3',
+  'Analysts': '#e7dfea',
+}
+
 export default function VisualizationDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -30,6 +44,32 @@ export default function VisualizationDetail() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toISOString().replace('T', ' ').substring(0, 19)
+  }
+
+  const getMBTIName = (mbti: string): string => {
+    const mbtiNames: Record<string, string> = {
+      'INTJ': 'The Architect',
+      'INTP': 'The Logician',
+      'ENTJ': 'The Commander',
+      'ENTP': 'The Debater',
+      'INFJ': 'The Advocate',
+      'INFP': 'The Mediator',
+      'ENFJ': 'The Protagonist',
+      'ENFP': 'The Campaigner',
+      'ISTJ': 'The Logistician',
+      'ISFJ': 'The Defender',
+      'ESTJ': 'The Executive',
+      'ESFJ': 'The Consul',
+      'ISTP': 'The Virtuoso',
+      'ISFP': 'The Adventurer',
+      'ESTP': 'The Entrepreneur',
+      'ESFP': 'The Entertainer',
+    }
+    const type = mbti.split('-')[0]
+    const extension = mbti.split('-')[1]
+    const name = mbtiNames[type] || 'Unknown'
+    const extName = extension === 'A' ? 'Assertive' : extension === 'T' ? 'Turbulent' : ''
+    return `${name}${extName ? ` - ${extName}` : ''}`
   }
 
   const goBack = () => {
@@ -61,17 +101,20 @@ export default function VisualizationDetail() {
 
   const viz = visualization
 
+  // Get MBTI category and color
+  const mbtiType = viz.mbti?.split('-')[0] || ''
+  const category = MBTI_CATEGORIES[mbtiType] || 'Unknown'
+  const categoryColor = CATEGORY_COLORS[category] || '#00ff00'
+
   return (
-    <div className="terminal-container">
+    <div className="terminal-container detail-page" style={{ '--category-color': categoryColor } as React.CSSProperties}>
       <div className="detail-header">
         <div className="back-button" onClick={goBack}>
           [ ← BACK TO GALLERY ]
         </div>
-        <pre className="detail-title">{`
-╔═══════════════════════════════════════════════════════════════╗
-║                    AGENT PROFILE                              ║
-╚═══════════════════════════════════════════════════════════════╝
-        `}</pre>
+        <div className="page-header">
+          <div className="header-title">AGENT PROFILE</div>
+        </div>
       </div>
 
       <div className="detail-content">
@@ -81,6 +124,13 @@ export default function VisualizationDetail() {
           <div className="detail-field">
             <span className="field-label">&gt; NAME:</span> {viz.agent_name}
           </div>
+          {viz.mbti && (
+            <div className="detail-field mbti-field">
+              <span className="field-label">&gt; MBTI:</span>
+              <span className="mbti-type">{viz.mbti}</span>
+              <span className="mbti-name"> ({getMBTIName(viz.mbti)})</span>
+            </div>
+          )}
           <div className="detail-field">
             <span className="field-label">&gt; ID:</span> {viz.id}
           </div>

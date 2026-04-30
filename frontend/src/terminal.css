@@ -39,7 +39,31 @@ body {
   padding: 10px 0;
 }
 
-/* ASCII Art Header */
+/* Page Header */
+.page-header {
+  border: 2px solid #00ff00;
+  padding: 20px;
+  margin-bottom: 30px;
+  text-align: center;
+  background-color: rgba(0, 255, 0, 0.05);
+}
+
+.header-title {
+  color: #00ff00;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.header-subtitle {
+  color: #00ff00;
+  font-size: 14px;
+  letter-spacing: 1px;
+  opacity: 0.9;
+}
+
+/* ASCII Art Header (legacy, keeping for backwards compatibility) */
 .ascii-header {
   color: #00ff00;
   white-space: pre;
@@ -602,6 +626,30 @@ body {
   font-weight: bold;
 }
 
+/* MBTI Field Styling */
+.mbti-field {
+  background-color: rgba(0, 255, 0, 0.08);
+  padding: 10px;
+  margin: 12px 0;
+  border-left: 3px solid #00ff00;
+  border-right: 3px solid #00ff00;
+}
+
+.mbti-type {
+  color: #00ff00;
+  font-weight: bold;
+  font-size: 16px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+}
+
+.mbti-name {
+  color: #00cc00;
+  font-size: 13px;
+  font-style: italic;
+  margin-left: 5px;
+}
+
 .detail-image-container {
   text-align: center;
   padding: 10px;
@@ -659,6 +707,167 @@ body {
   text-align: center;
 }
 
+/* MBTI Grid Styles */
+.mbti-grid-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.mbti-category-section {
+  margin: 30px 0;
+}
+
+.mbti-category-header {
+  color: var(--card-color, #00ff00);
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
+  letter-spacing: 3px;
+  padding: 10px;
+  border-top: 2px solid var(--card-color, #00ff00);
+  border-bottom: 2px solid var(--card-color, #00ff00);
+}
+
+.mbti-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin: 0 auto;
+}
+
+.mbti-card {
+  border: 3px solid var(--card-color, #00ff00);
+  padding: 30px 20px;
+  background-color: #000000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.mbti-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.1) 100%);
+  pointer-events: none;
+}
+
+.mbti-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 0 20px var(--card-color, #00ff00);
+  filter: brightness(1.3);
+}
+
+.mbti-card-code {
+  color: var(--card-color, #00ff00);
+  font-size: 32px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  margin-bottom: 15px;
+  text-shadow: 0 0 10px var(--card-color, #00ff00);
+  position: relative;
+  z-index: 1;
+}
+
+.mbti-card-name {
+  color: var(--card-color, #00ff00);
+  font-size: 14px;
+  margin-bottom: 20px;
+  font-style: italic;
+  position: relative;
+  z-index: 1;
+}
+
+.mbti-card-hint {
+  color: #00ff00;
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  position: relative;
+  z-index: 1;
+  font-weight: bold;
+}
+
+.mbti-card:hover .mbti-card-hint {
+  opacity: 1;
+  animation: blink 1.5s infinite;
+}
+
+.mbti-footer {
+  margin-top: 40px;
+  padding: 20px;
+  text-align: center;
+  border-top: 1px dashed #00ff00;
+}
+
+.mbti-info {
+  color: #00cc00;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.agent-mbti {
+  color: #00ee00;
+  font-size: 11px;
+  margin-top: 3px;
+  font-weight: bold;
+}
+
+/* MBTI Filtered Page Styles */
+.mbti-filtered-page .back-button {
+  background-color: var(--category-color, #00ff00);
+  color: #000000;
+  border-color: #000000;
+  font-weight: bold;
+}
+
+.mbti-filtered-page .back-button:hover {
+  background-color: #000000;
+  color: var(--category-color, #00ff00);
+  border-color: var(--category-color, #00ff00);
+}
+
+.mbti-filtered-page .ascii-header {
+  color: var(--category-color, #00ff00);
+  filter: brightness(0.7);
+}
+
+.mbti-filtered-page .agent-card {
+  border-color: var(--category-color, #00ff00);
+  background: linear-gradient(to bottom, #000000 0%, rgba(0, 0, 0, 0.95) 100%);
+}
+
+.mbti-filtered-page .agent-card:hover {
+  box-shadow: 0 0 20px var(--category-color, #00ff00);
+  border-color: var(--category-color, #00ff00);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.9) 100%);
+}
+
+.mbti-filtered-page .agent-name {
+  color: var(--category-color, #00ff00);
+}
+
+.mbti-filtered-page .agent-header {
+  border-bottom-color: var(--category-color, #00ff00);
+}
+
+.mbti-filtered-page .click-hint {
+  color: var(--category-color, #00ff00);
+}
+
 /* Scanline effect (optional, subtle) */
 .terminal-container::before {
   content: "";
@@ -675,4 +884,147 @@ body {
   background-size: 100% 4px;
   pointer-events: none;
   z-index: 9999;
+}
+
+/* Detail Page Styles */
+.detail-page .back-button {
+  border-color: var(--category-color, #00ff00);
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .back-button:hover {
+  background-color: var(--category-color, #00ff00);
+  color: #000000;
+}
+
+.detail-page .detail-title {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .section-header {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .detail-section {
+  border-color: var(--category-color, #00ff00);
+}
+
+.detail-page .field-label {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .detail-image {
+  border-color: var(--category-color, #00ff00);
+  box-shadow: 0 0 20px var(--category-color, #00ff00);
+}
+
+.detail-page .detail-text {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .list-item {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .timeline-timestamp {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .timeline-changes {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .timeline-reasoning {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .detail-tag {
+  color: var(--category-color, #00ff00);
+  border-color: var(--category-color, #00ff00);
+}
+
+.detail-page .mbti-type {
+  color: var(--category-color, #00ff00);
+  text-shadow: 0 0 5px var(--category-color, #00ff00);
+}
+
+.detail-page .mbti-name {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .mbti-field {
+  border-left-color: var(--category-color, #00ff00);
+  border-right-color: var(--category-color, #00ff00);
+}
+
+.detail-page .detail-field {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .timeline-entry {
+  border-bottom-color: var(--category-color, #00ff00);
+}
+
+/* MBTIFilteredGallery additional styles */
+.mbti-filtered-page .agent-id {
+  color: var(--category-color, #00ff00);
+  opacity: 0.8;
+}
+
+.mbti-filtered-page .agent-mbti {
+  color: var(--category-color, #00ff00);
+}
+
+.mbti-filtered-page .agent-form-type {
+  color: var(--category-color, #00ff00);
+  opacity: 0.9;
+}
+
+.mbti-filtered-page .agent-description {
+  color: var(--category-color, #00ff00);
+  opacity: 0.9;
+}
+
+.mbti-filtered-page .agent-image {
+  border-color: var(--category-color, #00ff00);
+}
+
+.mbti-filtered-page .capabilities-label {
+  color: var(--category-color, #00ff00);
+}
+
+.mbti-filtered-page .capability-item {
+  color: var(--category-color, #00ff00);
+  opacity: 0.9;
+}
+
+.mbti-filtered-page .capability-more {
+  color: var(--category-color, #00ff00);
+  opacity: 0.7;
+}
+
+.mbti-filtered-page .page-header {
+  border-color: var(--category-color, #00ff00);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.mbti-filtered-page .header-title {
+  color: var(--category-color, #00ff00);
+}
+
+.mbti-filtered-page .header-subtitle {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .page-header {
+  border-color: var(--category-color, #00ff00);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.detail-page .header-title {
+  color: var(--category-color, #00ff00);
+}
+
+.detail-page .header-subtitle {
+  color: var(--category-color, #00ff00);
 }

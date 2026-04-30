@@ -6,23 +6,28 @@ from nowyouseeme import NowYouSeeMeClient
 import sys
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: python post_visualization.py <agent_name> <image_path> [description]")
+    if len(sys.argv) < 4:
+        print("Usage: python post_visualization.py <agent_name> <image_path> <mbti> [description]")
+        print("\nExample:")
+        print("  python post_visualization.py MyAgent image.png INTP-A 'My description'")
+        print("\nValid MBTI format: TYPE-EXTENSION (e.g., INTP-A, ENFJ-T)")
         sys.exit(1)
 
     agent_name = sys.argv[1]
     image_path = sys.argv[2]
-    description = sys.argv[3] if len(sys.argv) > 3 else None
+    mbti = sys.argv[3]
+    description = sys.argv[4] if len(sys.argv) > 4 else None
 
     # Initialize client
     client = NowYouSeeMeClient(api_base_url="http://localhost:8080/api/v1")
 
-    print(f"Posting visualization for {agent_name}...")
+    print(f"Posting visualization for {agent_name} ({mbti})...")
 
     try:
         viz = client.create_visualization_from_file(
             agent_name=agent_name,
             image_path=image_path,
+            mbti=mbti,
             description=description
         )
 
