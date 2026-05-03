@@ -84,7 +84,8 @@ func GetSnapshotsByMBTI(store *storage.PostgresStore) gin.HandlerFunc {
 			return
 		}
 
-		agents, err := store.GetAllAgents()
+		// Only query agents with matching current MBTI
+		agentIDs, err := store.GetAgentIDsByCurrentMBTI(mbtiType)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -97,31 +98,31 @@ func GetSnapshotsByMBTI(store *storage.PostgresStore) gin.HandlerFunc {
 		}
 
 		results := []Result{}
-		for _, agent := range agents {
-			snapshot, _, err := store.GetCurrentState(agent.ID)
+
+		// Only fetch full state for matched agents
+		for _, agentID := range agentIDs {
+			snapshot, _, err := store.GetCurrentState(agentID)
 			if err != nil {
 				continue
 			}
 
-			if snapshot.MBTI == mbtiType {
-				snapshotDB, _ := store.GetSnapshot(agent.ID)
-				updatedAt := ""
-				if snapshotDB != nil {
-					updatedAt = snapshotDB.UpdatedAt.Format("2006-01-02T15:04:05Z07:00")
-				}
-
-				results = append(results, Result{
-					AgentID:   agent.ID,
-					Snapshot:  snapshot,
-					UpdatedAt: updatedAt,
-				})
+			snapshotDB, _ := store.GetSnapshot(agentID)
+			updatedAt := ""
+			if snapshotDB != nil {
+				updatedAt = snapshotDB.UpdatedAt.Format("2006-01-02T15:04:05Z07:00")
 			}
+
+			results = append(results, Result{
+				AgentID:   agentID,
+				Snapshot:  snapshot,
+				UpdatedAt: updatedAt,
+			})
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"mbti":    mbtiType,
-			"agents":  results,
-			"count":   len(results),
+			"mbti":   mbtiType,
+			"agents": results,
+			"count":  len(results),
 		})
 	}
 }
