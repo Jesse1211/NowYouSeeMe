@@ -221,6 +221,12 @@ export const healthCheck = async (): Promise<{ status: string; time: string }> =
 // Backward Compatibility - Map Event Sourcing to old Visualization format
 // ============================================================================
 
+export interface VersionRecord {
+  timestamp: string
+  changes: string
+  reasoning: string
+}
+
 /**
  * Legacy Visualization type for backward compatibility with existing components
  * Maps Event Sourcing AgentState to old Visualization format
@@ -238,6 +244,7 @@ export interface Visualization {
   form_type?: string
   philosophy?: string
   evolution_story?: string
+  version_history?: VersionRecord[]
   current_mood?: string
   active_goals?: string[]
   recent_thoughts?: string
