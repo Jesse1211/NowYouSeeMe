@@ -111,16 +111,19 @@ export const getGallery = async (): Promise<GetGalleryResponse> => {
  * Get agents filtered by MBTI type
  */
 export interface GetAgentsByMBTIResponse {
-  results: Array<{
+  mbti: string
+  agents: Array<{
     agent_id: string
     snapshot: AgentState
     updated_at: string
   }>
-  total: number
+  count: number
 }
 
 export const getAgentsByMBTI = async (mbtiType: string): Promise<GetAgentsByMBTIResponse> => {
-  const response = await client.get(`/snapshots/mbti/${mbtiType}`)
+  const response = await client.get('/snapshots', {
+    params: { mbti: mbtiType }
+  })
   return response.data
 }
 
@@ -306,7 +309,7 @@ export const getVisualizationsByMBTI = async (mbtiType: string): Promise<GetVisu
   const data = await getAgentsByMBTI(mbtiType)
 
   // Convert to AgentWithSnapshot format first
-  const agents: AgentWithSnapshot[] = data.results.map(result => ({
+  const agentsWithSnapshots: AgentWithSnapshot[] = data.agents.map(result => ({
     id: result.agent_id,
     name: result.agent_id, // We don't have name in this endpoint
     snapshot: result.snapshot,
@@ -314,8 +317,8 @@ export const getVisualizationsByMBTI = async (mbtiType: string): Promise<GetVisu
   }))
 
   return {
-    visualizations: agents.map(agentToVisualization),
-    count: data.total
+    visualizations: agentsWithSnapshots.map(agentToVisualization),
+    count: data.count
   }
 }
 
