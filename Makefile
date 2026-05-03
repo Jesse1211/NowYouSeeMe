@@ -135,6 +135,10 @@ full-demo: ## Full demo: clean + populate + read
 
 ##@ Database
 
+# Load environment variables from .env file if it exists
+-include .env
+export
+
 db-setup: ## Setup PostgreSQL database
 	@echo "$(GREEN)Setting up PostgreSQL database...$(NC)"
 	@bash backend/scripts/setup_db.sh
@@ -144,7 +148,7 @@ db-reset: db-setup ## Reset database (drop + recreate)
 
 db-migrate: ## Run migrations only
 	@echo "$(GREEN)Running database migrations...$(NC)"
-	@psql -h localhost -U postgres -d nowyouseeme -f backend/migrations/001_create_event_sourcing_schema.sql
+	@psql -h $${DB_HOST:-localhost} -U $${DB_USER:-liuzhenhua} -d $${DB_NAME:-nowyouseeme} -f backend/migrations/001_create_event_sourcing_schema.sql
 
 ##@ Setup
 
