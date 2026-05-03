@@ -399,30 +399,23 @@ func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentSnapshot
 }
 
 // AcquireLock acquires pessimistic lock for agent
+// Always locks the agents table for consistency and to avoid deadlocks
 func (s *PostgresStore) AcquireLock(tx *sql.Tx, agentID string) error {
-	// Try to lock snapshot row
+	// Always lock the agents table row for consistency
+	// This ensures uniform locking behavior regardless of snapshot existence
 	query := `
-		SELECT agent_id
-		FROM agent_state_snapshots
-		WHERE agent_id = $1
+		SELECT id
+		FROM agents
+		WHERE id = $1
 		FOR UPDATE
 	`
 
 	var lockedID string
 	err := tx.QueryRow(query, agentID).Scan(&lockedID)
-
-	if err == sql.ErrNoRows {
-		// No snapshot exists - lock the agent row instead
-		query = `
-			SELECT id
-			FROM agents
-			WHERE id = $1
-			FOR UPDATE
-		`
-		err = tx.QueryRow(query, agentID).Scan(&lockedID)
-	}
-
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("agent not found: %s", agentID)
+		}
 		return fmt.Errorf("failed to acquire lock: %w", err)
 	}
 
