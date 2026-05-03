@@ -8,9 +8,14 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file (ignore error if file doesn't exist)
+	_ = godotenv.Load()
+	_ = godotenv.Load("../.env") // Also try root .env
+
 	// Load database configuration
 	dbConfig := config.LoadDBConfig()
 
