@@ -498,14 +498,15 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	result.State.Philosophy = payload.Philosophy
 	result.State.CurrentSelfReflection = payload.SelfReflection
 
+	// Calculate final sequence number (used for MBTI timeline and snapshot)
+	finalSeq := result.Sequence
+	if len(payload.Operations) > 0 {
+		finalSeq = nextSeq + int64(len(payload.Operations)) - 1
+	}
+
 	// Check if MBTI changed and update agent record + insert timeline record
 	newMBTI := payload.MBTI
 	if newMBTI != latestMBTI {
-		finalSeq := nextSeq + int64(len(payload.Operations)) - 1
-		if len(payload.Operations) == 0 {
-			finalSeq = result.Sequence
-		}
-
 		// Update agents.current_mbti
 		_, err = tx.Exec(`UPDATE agents SET current_mbti = $1 WHERE id = $2`, newMBTI, agentID)
 		if err != nil {
@@ -520,10 +521,6 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	}
 
 	// Materialize snapshot (MVP: always)
-	finalSeq := nextSeq + int64(len(payload.Operations)) - 1
-	if len(payload.Operations) == 0 {
-		finalSeq = result.Sequence
-	}
 
 	if err := s.upsertSnapshotTx(tx, agentID, diaryID, result.State, finalSeq); err != nil {
 		return nil, err
