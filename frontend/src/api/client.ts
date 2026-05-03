@@ -16,7 +16,7 @@ const client = axios.create({
 export interface Agent {
   id: string
   name: string
-  initial_mbti: string
+  current_mbti: string  // Fixed: backend uses current_mbti
   created_at: string
 }
 
@@ -178,7 +178,7 @@ export const getTimeline = async (agentId: string): Promise<GetTimelineResponse>
 export interface CreateAgentRequest {
   agent_id: string
   name: string
-  initial_mbti: string
+  current_mbti: string  // Fixed: backend uses current_mbti
 }
 
 export const createAgent = async (data: CreateAgentRequest): Promise<Agent> => {
@@ -191,15 +191,7 @@ export const createAgent = async (data: CreateAgentRequest): Promise<Agent> => {
  */
 export interface SubmitDiaryRequest {
   agent_id: string
-  mbti: string
-  mbti_confidence?: number
-  geometry_representation?: string
-  reasoning?: string
-  current_mood?: string
-  philosophy?: string
-  self_reflection?: SelfReflection
-  operations: Operation[]
-  diary_timestamp?: string
+  payload: DiaryPayload  // Fixed: backend expects nested payload
 }
 
 export interface SubmitDiaryResponse {
@@ -358,35 +350,37 @@ export const createVisualization = async (
   const agent = await createAgent({
     agent_id: agentId,
     name: data.agent_name,
-    initial_mbti: 'INTP-A' // Default MBTI type
+    current_mbti: 'INTP-A' // Fixed: use current_mbti
   })
 
   // Submit initial diary entry
   const diaryResponse = await submitDiary({
     agent_id: agentId,
-    mbti: 'INTP-A',
-    mbti_confidence: 0.5,
-    geometry_representation: data.image_data,
-    philosophy: data.description || '',
-    current_mood: 'Newly awakened',
-    self_reflection: {
-      rumination_for_yesterday: '',
-      what_happened_today: 'I came into existence',
-      expectations_for_tomorrow: 'I will explore and grow'
-    },
-    operations: [
-      {
-        op: 'goal_create',
-        goal_id: 'goal_self_discovery',
-        title: 'Discover my purpose',
-        status: 'future'
+    payload: {  // Fixed: nest fields under payload
+      mbti: 'INTP-A',
+      mbti_confidence: 0.5,
+      geometry_representation: data.image_data,
+      philosophy: data.description || '',
+      current_mood: 'Newly awakened',
+      self_reflection: {
+        rumination_for_yesterday: '',
+        what_happened_today: 'I came into existence',
+        expectations_for_tomorrow: 'I will explore and grow'
       },
-      {
-        op: 'capability_add',
-        capability_id: 'cap_awareness',
-        title: 'Self-awareness'
-      }
-    ]
+      operations: [
+        {
+          op: 'goal_create',
+          goal_id: 'goal_self_discovery',
+          title: 'Discover my purpose',
+          status: 'future'
+        },
+        {
+          op: 'capability_add',
+          capability_id: 'cap_awareness',
+          title: 'Self-awareness'
+        }
+      ]
+    }
   })
 
   // Return as Visualization format

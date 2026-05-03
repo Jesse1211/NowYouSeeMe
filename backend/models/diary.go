@@ -62,5 +62,5 @@ type Operation struct {
 // SubmitDiaryRequest represents diary submission API request
 type SubmitDiaryRequest struct {
 	AgentID string       `json:"agent_id" binding:"required"`
-	Payload DiaryPayload `json:",inline"`
+	Payload DiaryPayload `json:"payload" binding:"required"`
 }

@@ -341,6 +341,16 @@ class NowYouSeeMeClient:
             f"{self.api_base_url}/diaries",
             json=payload
         )
+
+        if response.status_code != 201:
+            print(f"\n✗ Diary submission failed ({response.status_code})")
+            print(f"  Agent: {agent_id}")
+            print(f"  Error: {response.text}")
+            if payload.get("payload", {}).get("operations"):
+                print(f"  Operations:")
+                for i, op in enumerate(payload["payload"]["operations"]):
+                    print(f"    {i}: {op}")
+
         response.raise_for_status()
 
         result = response.json()

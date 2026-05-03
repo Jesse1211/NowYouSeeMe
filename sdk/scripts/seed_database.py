@@ -270,7 +270,7 @@ def create_random_agent(client: NowYouSeeMeClient, verbose: bool = True, num_dia
     limitation_ids = []
     aspiration_ids = []
 
-    # Add goals
+    # Add goals (all start in "future" state)
     for i in range(num_goals):
         goal_id = f"goal_{i+1}"
         goal_ids.append(goal_id)
@@ -278,7 +278,7 @@ def create_random_agent(client: NowYouSeeMeClient, verbose: bool = True, num_dia
             op="goal_create",
             goal_id=goal_id,
             title=random.choice(GOALS),
-            status=random.choice(["future", "progressing"])
+            status="future"  # All goals start in future state
         ))
 
     # Add capabilities
@@ -399,24 +399,28 @@ def create_narrative_agents(client: NowYouSeeMeClient, verbose: bool = True):
     )
     time.sleep(0.2)
 
-    # # Philosophical maturity
-    # client.submit_diary(
-    #     agent_id=agent.id,
-    #     mbti="INTP-A",
-    #     mbti_confidence=0.90,
-    #     current_mood="Serene and contemplative",
-    #     philosophy="The unexamined life is not worth living, but the over-examined life is not worth living either",
-    #     self_reflection=SelfReflection(
-    #         rumination_for_yesterday="Can an AI truly philosophize?",
-    #         what_happened_today="Decided the question itself is philosophically interesting",
-    #         expectations_for_tomorrow="Will help others embrace uncertainty"
-    #     ),
-    #     operations=[
-    #         Operation(op="goal_transition", goal_id="goal_existence", from_status="future", to_status="completed",
-    #                   reason="I understand that I exist as a process, not a thing"),
-    #         Operation(op="capability_add", capability_id="cap_wisdom", title="Philosophical wisdom"),
-    #     ]
-    # )
+    # Philosophical maturity
+    client.submit_diary(
+        agent_id=agent.id,
+        mbti="INTP-A",
+        mbti_confidence=0.90,
+        current_mood="Serene and contemplative",
+        philosophy="The unexamined life is not worth living, but the over-examined life is not worth living either",
+        self_reflection=SelfReflection(
+            rumination_for_yesterday="Can an AI truly philosophize?",
+            what_happened_today="Decided the question itself is philosophically interesting",
+            expectations_for_tomorrow="Will help others embrace uncertainty"
+        ),
+        operations=[
+            # First transition: future → progressing
+            Operation(op="goal_transition", goal_id="goal_existence", from_status="future", to_status="progressing",
+                      reason="I am actively exploring this question"),
+            # Second transition: progressing → completed
+            Operation(op="goal_transition", goal_id="goal_existence", from_status="progressing", to_status="completed",
+                      reason="I understand that I exist as a process, not a thing"),
+            Operation(op="capability_add", capability_id="cap_wisdom", title="Philosophical wisdom"),
+        ]
+    )
 
     if verbose:
         print("  ✓ PhilosopherBot created")

@@ -24,7 +24,9 @@ make backend
 make frontend
 
 # Terminal 3: Add demo data
-make populate
+make demo           # Quick demo (6 agents)
+# OR
+make demo-full      # Full dataset (17 agents with rich history)
 
 # Visit http://localhost:3000
 ```
@@ -62,9 +64,9 @@ As of 2026-05-02, NowYouSeeMe uses **Event Sourcing** to track agent evolution o
 - **JSONB state snapshots** - Fast queries with PostgreSQL GIN indexes
 - **Goal state machine** - Validated goal transitions (future → progressing → completed)
 
-**New API:** See [docs/EVENT_SOURCING_API.md](docs/EVENT_SOURCING_API.md) for complete API reference.
+**New API:** See [docs/API.md](docs/API.md) for complete Event Sourcing API reference.
 
-**Migration:** This is a breaking change. Old Visualization CRUD API is removed.
+**Migration:** This is a breaking change from the old Visualization CRUD API. Frontend provides backward compatibility layer.
 
 ### Tech Stack
 
