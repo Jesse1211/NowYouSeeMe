@@ -399,6 +399,9 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		return nil, err
 	}
 
+	// Track old MBTI before applying changes
+	oldMBTI := currentState.MBTI
+
 	// Validate operations
 	if err := validation.ValidateOperations(payload.Operations, currentState); err != nil {
 		return nil, err
@@ -437,6 +440,20 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	currentState.CurrentMood = payload.CurrentMood
 	currentState.Philosophy = payload.Philosophy
 	currentState.CurrentSelfReflection = payload.SelfReflection
+
+	// Check if MBTI changed and insert timeline record
+	newMBTI := payload.MBTI
+	if newMBTI != oldMBTI {
+		finalSeq := nextSeq + int64(len(payload.Operations)) - 1
+		if len(payload.Operations) == 0 {
+			finalSeq = currentSeq
+		}
+
+		err = s.insertMBTITimeline(tx, agentID, newMBTI, diaryID, finalSeq)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Materialize snapshot (MVP: always)
 	finalSeq := nextSeq + int64(len(payload.Operations)) - 1
