@@ -33,10 +33,19 @@ func LoadDBConfig() *DBConfig {
 
 // ConnectDB establishes PostgreSQL connection
 func ConnectDB(config *DBConfig) (*sql.DB, error) {
+	// Build connection string - omit password if empty
 	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		config.Host, config.Port, config.User, config.Password, config.DBName, config.SSLMode,
+		"host=%s port=%s user=%s dbname=%s sslmode=%s",
+		config.Host, config.Port, config.User, config.DBName, config.SSLMode,
 	)
+
+	// Only add password if not empty
+	if config.Password != "" {
+		connStr = fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			config.Host, config.Port, config.User, config.Password, config.DBName, config.SSLMode,
+		)
+	}
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
