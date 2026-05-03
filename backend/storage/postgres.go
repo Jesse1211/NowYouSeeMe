@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -30,8 +31,11 @@ func (s *PostgresStore) CreateAgent(req *models.CreateAgentRequest) (*models.Age
 		CreatedAt:   time.Now(),
 	}
 
-	// Begin transaction
-	tx, err := s.db.Begin()
+	// Begin transaction with 5 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -427,8 +431,11 @@ func (s *PostgresStore) AcquireLock(tx *sql.Tx, agentID string) error {
 
 // SubmitDiary handles complete diary submission with transaction
 func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload) (*models.AgentState, error) {
-	// Begin transaction
-	tx, err := s.db.Begin()
+	// Begin transaction with 5 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
