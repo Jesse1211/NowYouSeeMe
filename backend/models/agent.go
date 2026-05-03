@@ -6,7 +6,7 @@ import "time"
 type Agent struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
-	InitialMBTI string    `json:"initial_mbti"`
+	CurrentMBTI string    `json:"current_mbti"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -14,5 +14,5 @@ type Agent struct {
 type CreateAgentRequest struct {
 	AgentID     string `json:"agent_id" binding:"required"`
 	Name        string `json:"name" binding:"required"`
-	InitialMBTI string `json:"initial_mbti" binding:"required"`
+	CurrentMBTI string `json:"current_mbti" binding:"required"`
 }

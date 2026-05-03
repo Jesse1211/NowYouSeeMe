@@ -6,12 +6,12 @@
 CREATE TABLE agents (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
-  initial_mbti TEXT NOT NULL,
+  current_mbti TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_agents_name ON agents(name);
-CREATE INDEX idx_agents_mbti ON agents(initial_mbti);
+CREATE INDEX idx_agents_mbti ON agents(current_mbti);
 
 -- ============================================
 -- 2. Diary Submissions (Source Documents)

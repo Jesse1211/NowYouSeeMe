@@ -19,16 +19,16 @@ func SubmitDiary(store *storage.PostgresStore) gin.HandlerFunc {
 			return
 		}
 
-		// Validate MBTI format
-		if err := validation.ValidateMBTI(req.Payload.MBTI); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
 		// Check agent exists
 		_, err := store.GetAgent(req.AgentID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found", "agent_id": req.AgentID})
+			return
+		}
+
+		// Validate MBTI format
+		if err := validation.ValidateMBTI(req.Payload.MBTI); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 

@@ -20,7 +20,7 @@ func CreateAgent(store *storage.PostgresStore) gin.HandlerFunc {
 		}
 
 		// Validate MBTI format
-		if err := validation.ValidateMBTI(req.InitialMBTI); err != nil {
+		if err := validation.ValidateMBTI(req.CurrentMBTI); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -49,7 +49,7 @@ func GetAgents(store *storage.PostgresStore) gin.HandlerFunc {
 			}
 
 			// Get current snapshot with WAL
-			snapshot, _, err := store.GetCurrentState(agentID)
+			snapshot, _, err := store.GetLatestSnapshot(agentID)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return

@@ -15,9 +15,9 @@ func (e *ValidationError) Error() string {
 }
 
 // ValidateOperations validates operations against current state
-func ValidateOperations(operations []models.Operation, currentState *models.AgentState) error {
+func ValidateOperations(operations []models.Operation, latestState *models.AgentState) error {
 	errors := []string{}
-	tempState := cloneState(currentState)
+	tempState := cloneState(latestState)
 
 	for i, op := range operations {
 		if err := validateOperation(op, tempState); err != nil {

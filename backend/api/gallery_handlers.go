@@ -19,15 +19,15 @@ func GetGallery(store *storage.PostgresStore) gin.HandlerFunc {
 		}
 
 		type AgentWithSnapshot struct {
-			ID          string              `json:"id"`
-			Name        string              `json:"name"`
-			Snapshot    *models.AgentState  `json:"snapshot"`
-			LastUpdated string              `json:"last_updated"`
+			ID          string             `json:"id"`
+			Name        string             `json:"name"`
+			Snapshot    *models.AgentState `json:"snapshot"`
+			LastUpdated string             `json:"last_updated"`
 		}
 
 		results := []AgentWithSnapshot{}
 		for _, agent := range agents {
-			snapshot, _, err := store.GetCurrentState(agent.ID)
+			snapshot, _, err := store.GetLatestSnapshot(agent.ID)
 			if err != nil {
 				continue // Skip agents with errors
 			}
@@ -62,7 +62,7 @@ func GetSnapshot(store *storage.PostgresStore) gin.HandlerFunc {
 			return
 		}
 
-		snapshot, _, err := store.GetCurrentState(agentID)
+		snapshot, _, err := store.GetLatestSnapshot(agentID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found", "agent_id": agentID})
 			return
@@ -101,7 +101,7 @@ func GetSnapshotsByMBTI(store *storage.PostgresStore) gin.HandlerFunc {
 
 		// Only fetch full state for matched agents
 		for _, agentID := range agentIDs {
-			snapshot, _, err := store.GetCurrentState(agentID)
+			snapshot, _, err := store.GetLatestSnapshot(agentID)
 			if err != nil {
 				continue
 			}
