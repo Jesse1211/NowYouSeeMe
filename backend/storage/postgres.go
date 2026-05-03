@@ -494,3 +494,33 @@ func (s *PostgresStore) insertMBTITimeline(
 
 	return nil
 }
+
+// GetAgentIDsByCurrentMBTI returns agent IDs with the specified current MBTI type
+func (s *PostgresStore) GetAgentIDsByCurrentMBTI(mbtiType string) ([]string, error) {
+	query := `
+		SELECT agent_id
+		FROM (
+			SELECT DISTINCT ON (agent_id) agent_id, mbti
+			FROM agent_mbti_timeline
+			ORDER BY agent_id, effective_from DESC
+		) latest
+		WHERE mbti = $1
+	`
+
+	rows, err := s.db.Query(query, mbtiType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query agents by MBTI: %w", err)
+	}
+	defer rows.Close()
+
+	agentIDs := []string{}
+	for rows.Next() {
+		var agentID string
+		if err := rows.Scan(&agentID); err != nil {
+			return nil, err
+		}
+		agentIDs = append(agentIDs, agentID)
+	}
+
+	return agentIDs, nil
+}
