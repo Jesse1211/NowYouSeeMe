@@ -36,6 +36,8 @@ This specification outlines the strategy for updating documentation to provide a
 
 #### Secondary (User-Facing)
 - `README.md` - Main project documentation
+- `docs/README.md` - Documentation navigation hub
+- `frontend/README.md` - Frontend developer documentation
 
 ### Documents to Delete
 
@@ -133,6 +135,82 @@ Frontend ←→ Backend ←→ PostgreSQL Event Sourcing
 - Quick Commands section
 - Documentation links
 - Project Structure diagram
+
+---
+
+### docs/README.md
+
+**Updates:**
+
+1. **Remove Broken Links**
+   - Remove references to deleted SDK docs:
+     - `sdk/QUICK_REFERENCE.md` (line 25, 43, 63, 85, 95, 101, 105)
+     - `sdk/SCRIPTS_GUIDE.md` (line 26, 44, 64, 86, 105)
+     - `sdk/TESTING_GUIDE.md` (line 27, 65, 87, 106)
+
+2. **Update SDK Documentation Section**
+   - Change "AI Agent Developer" section (lines 61-65):
+     - Remove references to deleted SDK docs
+     - Point to `sdk/scripts/README.md` for seed scripts
+     - Note that SDK needs updating to match new API
+
+3. **Update Documentation Structure Diagram**
+   - Remove SDK docs from visual structure (lines 83-87)
+   - Add reference to `sdk/scripts/README.md` for seed scripts
+
+**Example Update:**
+```markdown
+### 🤖 SDK & Scripts
+You want to populate the database or integrate with the platform:
+1. [Seed Scripts Guide](../sdk/scripts/README.md) - Database seeding
+2. [API Documentation](../docs/.context/API.md) - Current API reference
+
+**Note:** Python SDK is being updated to match the Event Sourcing API.
+```
+
+---
+
+### frontend/README.md
+
+**Updates:**
+
+1. **Update Features Section (lines 18-22)**
+   - Change: "**Gallery View**: Browse all AI Agent visualizations"
+     → "**Agent Gallery**: Browse all agents with their evolution timelines"
+   - Change: "**Upload Modal**: Submit new visualizations"
+     → "**Data Display**: View agent snapshots and diary histories"
+   - Remove: "**Base64 Support**" line (outdated)
+
+2. **Update Component Overview Section**
+   - Update component descriptions to match current Event Sourcing architecture
+   - VisualizationGallery → AgentGallery (displays agents with snapshots)
+   - Update upload form description (if still exists, or note it's deprecated)
+
+3. **Update API Integration Section (lines 69-78)**
+   - Replace old API methods with current ones:
+   ```markdown
+   All API calls are in `src/api/client.ts`:
+   - `getGallery()` - Get all agents with snapshots
+   - `getAgent(id)` - Get specific agent
+   - `getTimeline(agentId)` - Get agent evolution timeline
+   - `submitDiary(agentId, payload)` - Submit diary entry (if implemented)
+   ```
+
+4. **Update Notes Section (lines 100-106)**
+   - Remove: "All images are Base64 encoded"
+   - Add: "Backend uses PostgreSQL Event Sourcing architecture"
+   - Add: "Agent state is materialized from event log"
+
+**Example Update:**
+```markdown
+## Notes
+
+- Frontend provides backward compatibility layer for old API
+- Backend uses PostgreSQL Event Sourcing architecture
+- Agent state is materialized from diary event log
+- Gallery displays current snapshots with evolution timelines
+- Backend must be running on port 8080
+```
 
 ---
 
@@ -654,24 +732,28 @@ Before finalizing updates, verify:
 - [ ] All data models match actual Go structs in codebase
 - [ ] All file paths and cross-references are valid
 - [ ] No references to deleted features (Visualization, Base64, in-memory)
+- [ ] No broken links to deleted SDK documentation files
 - [ ] Event Sourcing concepts explained clearly
 - [ ] Goal state machine documented with valid transitions
 - [ ] MBTI projection tables explained
 - [ ] All make commands still work as documented
 - [ ] PostgreSQL setup instructions are complete
 - [ ] Migration history preserved for context
+- [ ] Frontend component descriptions match current implementation
 
 ---
 
 ## Implementation Order
 
 1. **Delete outdated files first** - Remove confusion sources
-2. **Update README.md** - User-facing documentation
-3. **Update ARCHITECTURE.md** - Core technical architecture
-4. **Update PROJECT_CONTEXT.md** - Add ADRs and update patterns
-5. **Review API.md** - Minor updates only
-6. **Update SETUP.md** - Add PostgreSQL setup
-7. **Commit all changes** - Single comprehensive commit
+2. **Update README.md** - Main user-facing documentation
+3. **Update docs/README.md** - Fix broken links to deleted files
+4. **Update frontend/README.md** - Update to Event Sourcing API
+5. **Update ARCHITECTURE.md** - Core technical architecture
+6. **Update PROJECT_CONTEXT.md** - Add ADRs and update patterns
+7. **Review API.md** - Minor updates only
+8. **Update SETUP.md** - Add PostgreSQL setup
+9. **Commit all changes** - Single comprehensive commit
 
 ---
 
