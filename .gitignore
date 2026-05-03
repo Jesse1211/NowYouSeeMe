@@ -76,3 +76,4 @@ temp/
 
 *.md
 !/README.md
+.env

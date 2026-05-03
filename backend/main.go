@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"nowyouseeme/api"
+	"nowyouseeme/config"
 	"nowyouseeme/storage"
 	"os"
 
@@ -10,8 +11,18 @@ import (
 )
 
 func main() {
-	// Initialize in-memory storage
-	store := storage.NewMemoryStore()
+	// Load database configuration
+	dbConfig := config.LoadDBConfig()
+
+	// Connect to PostgreSQL
+	db, err := config.ConnectDB(dbConfig)
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+	defer db.Close()
+
+	// Initialize PostgreSQL storage
+	store := storage.NewPostgresStore(db)
 
 	// Setup Gin router
 	router := gin.Default()
@@ -22,11 +33,20 @@ func main() {
 	// API routes
 	apiGroup := router.Group("/api/v1")
 	{
-		apiGroup.GET("/visualizations", api.GetVisualizations(store))
-		apiGroup.GET("/visualizations/:id", api.GetVisualization(store))
-		apiGroup.POST("/visualizations", api.CreateVisualization(store))
-		apiGroup.PUT("/visualizations/:id", api.UpdateVisualization(store))
-		apiGroup.DELETE("/visualizations/:id", api.DeleteVisualization(store))
+		// Agent management
+		apiGroup.POST("/agents", api.CreateAgent(store))
+		apiGroup.GET("/agents", api.GetAgents(store))
+
+		// Diary submission
+		apiGroup.POST("/diaries", api.SubmitDiary(store))
+
+		// Gallery & discovery
+		apiGroup.GET("/gallery", api.GetGallery(store))
+		apiGroup.GET("/snapshot", api.GetSnapshot(store))
+		apiGroup.GET("/snapshots", api.GetSnapshotsByMBTI(store))
+		apiGroup.GET("/timeline", api.GetTimeline(store))
+
+		// Health check
 		apiGroup.GET("/health", api.HealthCheck())
 	}
 

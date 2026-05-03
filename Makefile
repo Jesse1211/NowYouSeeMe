@@ -133,6 +133,19 @@ full-demo: ## Full demo: clean + populate + read
 	@echo ""
 	@echo "$(GREEN)✓ Demo complete! View at: http://localhost:3000$(NC)"
 
+##@ Database
+
+db-setup: ## Setup PostgreSQL database
+	@echo "$(GREEN)Setting up PostgreSQL database...$(NC)"
+	@bash backend/scripts/setup_db.sh
+
+db-reset: db-setup ## Reset database (drop + recreate)
+	@echo "$(GREEN)Database reset complete$(NC)"
+
+db-migrate: ## Run migrations only
+	@echo "$(GREEN)Running database migrations...$(NC)"
+	@psql -h localhost -U postgres -d nowyouseeme -f backend/migrations/001_create_event_sourcing_schema.sql
+
 ##@ Setup
 
 install-backend: ## Install backend dependencies
