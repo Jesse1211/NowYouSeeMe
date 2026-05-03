@@ -1,4 +1,4 @@
-.PHONY: help start stop test crud create read update delete clean backend frontend demo
+.PHONY: help backend frontend demo db-setup db-reset db-migrate db-connect install install-backend install-frontend install-sdk build build-backend build-frontend docs
 
 # Default target
 .DEFAULT_GOAL := help
@@ -13,7 +13,7 @@ NC := \033[0m # No Color
 ##@ Help
 
 help: ## Show this help message
-	@echo "$(CYAN)NowYouSeeMe - Makefile Commands$(NC)"
+	@echo "$(CYAN)NowYouSeeMe - Event Sourcing Platform$(NC)"
 	@echo ""
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make $(CYAN)<target>$(NC)\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  $(CYAN)%-15s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
@@ -27,111 +27,9 @@ frontend: ## Start frontend dev server
 	@echo "$(GREEN)Starting frontend dev server...$(NC)"
 	cd frontend && npm run dev
 
-demo: ## Generate sample demo data
-	@echo "$(GREEN)Generating demo data...$(NC)"
+demo: ## Generate sample demo data (6 agents with evolution)
+	@echo "$(GREEN)Generating sample data...$(NC)"
 	cd sdk && python3 examples/generate_sample_data.py
-
-##@ Testing
-
-test: ## Run all tests
-	@echo "$(GREEN)Running all tests...$(NC)"
-	@cd sdk && python3 tests/test_create.py
-	@cd sdk && python3 tests/test_read.py
-	@cd sdk && python3 tests/test_update.py
-	@cd sdk && python3 tests/test_delete.py
-
-test-full: ## Run full CRUD test suite
-	@echo "$(GREEN)Running full CRUD test suite...$(NC)"
-	cd sdk && python3 tests/test_crud_full.py
-
-test-create: ## Test CREATE only
-	cd sdk && python3 tests/test_create.py
-
-test-read: ## Test READ only
-	cd sdk && python3 tests/test_read.py
-
-test-update: ## Test UPDATE only
-	cd sdk && python3 tests/test_update.py
-
-test-delete: ## Test DELETE only
-	cd sdk && python3 tests/test_delete.py
-
-##@ CRUD Operations
-
-crud: ## Execute full CRUD cycle (auto-generated)
-	@echo "$(GREEN)Executing CRUD cycle...$(NC)"
-	cd sdk && python3 scripts/crud.py
-
-crud-custom: ## Execute CRUD with custom name (usage: make crud-custom NAME="MyAgent")
-	@echo "$(GREEN)Executing CRUD with custom name: $(NAME)$(NC)"
-	cd sdk && python3 scripts/crud.py "$(NAME)"
-
-create: ## Create visualization (auto-generated)
-	@echo "$(GREEN)Creating visualization...$(NC)"
-	cd sdk && python3 scripts/create.py
-
-create-custom: ## Create with custom name (usage: make create-custom NAME="MyAgent")
-	cd sdk && python3 scripts/create.py "$(NAME)"
-
-read: ## Read all visualizations
-	@echo "$(GREEN)Reading all visualizations...$(NC)"
-	cd sdk && python3 scripts/read.py
-
-read-one: ## Read one visualization (usage: make read-one ID=<viz_id>)
-	cd sdk && python3 scripts/read.py $(ID)
-
-update: ## Update visualization (usage: make update ID=<viz_id>)
-	cd sdk && python3 scripts/update.py $(ID)
-
-update-custom: ## Update with custom name (usage: make update-custom ID=<viz_id> NAME="NewName")
-	cd sdk && python3 scripts/update.py $(ID) "$(NAME)"
-
-delete: ## Delete visualization (usage: make delete ID=<viz_id>)
-	cd sdk && python3 scripts/delete.py $(ID) --force
-
-##@ Utilities
-
-random: ## Add random visualization
-	@echo "$(GREEN)Adding random visualization...$(NC)"
-	cd sdk && python3 scripts/add_random.py
-
-random-many: ## Add multiple random visualizations (usage: make random-many N=10)
-	@echo "$(GREEN)Adding $(N) random visualizations...$(NC)"
-	@for i in $$(seq 1 $(N)); do \
-		cd sdk && python3 scripts/add_random.py; \
-		sleep 0.3; \
-	done
-
-list: ## List all visualizations
-	cd sdk && python3 scripts/list_all.py
-
-clean: ## Clear all visualizations
-	@echo "$(RED)Clearing all data...$(NC)"
-	cd sdk && python3 scripts/clear_all.py
-
-##@ Quick Workflows
-
-quick-test: ## Quick test: clean + crud + read
-	@echo "$(GREEN)Quick test workflow...$(NC)"
-	@make clean
-	@sleep 1
-	@make crud
-	@sleep 1
-	@make read
-
-populate: ## Populate with 10 random visualizations
-	@echo "$(GREEN)Populating with 10 random visualizations...$(NC)"
-	@make random-many N=10
-
-full-demo: ## Full demo: clean + populate + read
-	@echo "$(GREEN)Running full demo...$(NC)"
-	@make clean
-	@sleep 1
-	@make populate
-	@sleep 1
-	@make list
-	@echo ""
-	@echo "$(GREEN)✓ Demo complete! View at: http://localhost:3000$(NC)"
 
 ##@ Database
 
@@ -149,6 +47,10 @@ db-reset: db-setup ## Reset database (drop + recreate)
 db-migrate: ## Run migrations only
 	@echo "$(GREEN)Running database migrations...$(NC)"
 	@psql -h $${DB_HOST:-localhost} -U $${DB_USER:-liuzhenhua} -d $${DB_NAME:-nowyouseeme} -f backend/migrations/001_create_event_sourcing_schema.sql
+
+db-connect: ## Connect to database using psql
+	@echo "$(GREEN)Connecting to database...$(NC)"
+	@psql -h $${DB_HOST:-localhost} -U $${DB_USER:-liuzhenhua} -d $${DB_NAME:-nowyouseeme}
 
 ##@ Setup
 
@@ -188,19 +90,14 @@ build: ## Build all
 
 docs: ## Show documentation overview
 	@echo "$(CYAN)Documentation:$(NC)"
-	@echo "  README.md              - Project overview"
-	@echo "  QUICKSTART.md          - Quick start guide"
-	@echo "  sdk/QUICK_REFERENCE.md - SDK quick reference"
-	@echo "  sdk/SCRIPTS_GUIDE.md   - Scripts usage guide"
-	@echo "  sdk/TESTING_GUIDE.md   - Testing guide"
-	@echo "  docs/.context/         - Detailed documentation"
-
-##@ Aliases (Short commands)
-
-c: create ## Alias for 'create'
-r: read ## Alias for 'read'
-u: ## Update (usage: make u ID=<viz_id>)
-	@make update ID=$(ID)
-d: ## Delete (usage: make d ID=<viz_id>)
-	@make delete ID=$(ID)
-t: test-full ## Alias for 'test-full'
+	@echo "  README.md                           - Project overview"
+	@echo "  docs/superpowers/specs/*.md         - Design specifications"
+	@echo "  sdk/examples/generate_sample_data.py - Sample data generator"
+	@echo ""
+	@echo "$(CYAN)Quick Start:$(NC)"
+	@echo "  1. make install                     - Install all dependencies"
+	@echo "  2. make db-setup                    - Setup PostgreSQL database"
+	@echo "  3. make backend                     - Start backend (Terminal 1)"
+	@echo "  4. make frontend                    - Start frontend (Terminal 2)"
+	@echo "  5. make demo                        - Generate sample data (Terminal 3)"
+	@echo "  6. Visit http://localhost:3000      - View the gallery"

@@ -20,6 +20,7 @@ type DBConfig struct {
 }
 
 // LoadDBConfig loads database config from environment
+// psql -h localhost -p 5432 -U liuzhenhua -d nowyouseeme
 func LoadDBConfig() *DBConfig {
 	return &DBConfig{
 		Host:     getEnv("DB_HOST", "localhost"),
