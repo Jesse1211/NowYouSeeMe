@@ -19,6 +19,12 @@ func CreateAgent(store *storage.PostgresStore) gin.HandlerFunc {
 			return
 		}
 
+		// Validate AgentID format
+		if err := validation.ValidateAgentID(req.AgentID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		// Validate MBTI format
 		if err := validation.ValidateMBTI(req.CurrentMBTI); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -42,6 +48,12 @@ func GetAgents(store *storage.PostgresStore) gin.HandlerFunc {
 
 		// Get specific agent
 		if agentID != "" {
+			// Validate AgentID format
+			if err := validation.ValidateAgentID(agentID); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
 			agent, err := store.GetAgent(agentID)
 			if err != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found", "agent_id": agentID})

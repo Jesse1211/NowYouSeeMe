@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"nowyouseeme/models"
 	"nowyouseeme/storage"
+	"nowyouseeme/validation"
 
 	"github.com/gin-gonic/gin"
 )
@@ -56,6 +57,12 @@ func GetSnapshot(store *storage.PostgresStore) gin.HandlerFunc {
 		agentID := c.Query("agent_id")
 		if agentID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "agent_id query parameter required"})
+			return
+		}
+
+		// Validate AgentID format
+		if err := validation.ValidateAgentID(agentID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -122,6 +129,12 @@ func GetTimeline(store *storage.PostgresStore) gin.HandlerFunc {
 		agentID := c.Query("agent_id")
 		if agentID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "agent_id query parameter required"})
+			return
+		}
+
+		// Validate AgentID format
+		if err := validation.ValidateAgentID(agentID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 

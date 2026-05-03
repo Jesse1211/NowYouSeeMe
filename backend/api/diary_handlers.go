@@ -19,6 +19,12 @@ func SubmitDiary(store *storage.PostgresStore) gin.HandlerFunc {
 			return
 		}
 
+		// Validate AgentID format
+		if err := validation.ValidateAgentID(req.AgentID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		// Check agent exists
 		_, err := store.GetAgent(req.AgentID)
 		if err != nil {
