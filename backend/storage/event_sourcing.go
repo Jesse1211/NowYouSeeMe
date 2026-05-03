@@ -64,6 +64,17 @@ func ApplyEvent(state *models.AgentState, event *models.Event) error {
 	case "aspiration_update":
 		state.Aspirations[payload.AspirationID] = models.Entity{Title: payload.Title}
 
+	case "metadata_update":
+		// Update metadata fields from diary submission
+		state.MBTI = payload.MBTI
+		state.MBTIConfidence = payload.MBTIConfidence
+		state.GeometryRep = payload.GeometryRep
+		state.CurrentMood = payload.CurrentMood
+		state.Philosophy = payload.Philosophy
+		if payload.CurrentSelfReflection != nil {
+			state.CurrentSelfReflection = *payload.CurrentSelfReflection
+		}
+
 	default:
 		return fmt.Errorf("unknown event type: %s", event.EventType)
 	}

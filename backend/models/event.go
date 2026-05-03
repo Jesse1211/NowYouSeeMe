@@ -31,4 +31,12 @@ type EventPayload struct {
 	CapabilityID string `json:"capability_id,omitempty"`
 	LimitationID string `json:"limitation_id,omitempty"`
 	AspirationID string `json:"aspiration_id,omitempty"`
+
+	// Metadata events (for metadata_update event type)
+	MBTI                  string          `json:"mbti,omitempty"`
+	MBTIConfidence        float64         `json:"mbti_confidence,omitempty"`
+	GeometryRep           string          `json:"geometry_representation,omitempty"`
+	CurrentMood           string          `json:"current_mood,omitempty"`
+	Philosophy            string          `json:"philosophy,omitempty"`
+	CurrentSelfReflection *SelfReflection `json:"current_self_reflection,omitempty"`
 }

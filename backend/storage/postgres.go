@@ -473,9 +473,40 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	// Get next sequence number
 	nextSeq := result.Sequence + 1
 
-	// Create and insert events
+	// Create metadata_update event (Event Sourcing purity: all state changes via events)
+	metadataEvent := &models.Event{
+		AgentID:        agentID,
+		DiaryID:        diaryID,
+		EventType:      "metadata_update",
+		SequenceNumber: nextSeq,
+	}
+	metadataPayload := models.EventPayload{
+		MBTI:                  payload.MBTI,
+		MBTIConfidence:        payload.MBTIConfidence,
+		GeometryRep:           payload.GeometryRep,
+		CurrentMood:           payload.CurrentMood,
+		Philosophy:            payload.Philosophy,
+		CurrentSelfReflection: &payload.SelfReflection,
+	}
+	metadataPayloadJSON, err := json.Marshal(metadataPayload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal metadata payload: %w", err)
+	}
+	metadataEvent.Payload = metadataPayloadJSON
+
+	// Insert metadata event
+	if err := s.insertEventTx(tx, metadataEvent); err != nil {
+		return nil, err
+	}
+
+	// Apply metadata event to state
+	if err := ApplyEvent(result.State, metadataEvent); err != nil {
+		return nil, fmt.Errorf("failed to apply metadata event: %w", err)
+	}
+
+	// Create and insert operation events (starting from nextSeq + 1)
 	for i, op := range payload.Operations {
-		event, err := OperationToEvent(op, agentID, diaryID, nextSeq+int64(i))
+		event, err := OperationToEvent(op, agentID, diaryID, nextSeq+1+int64(i))
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert operation to event: %w", err)
 		}
@@ -490,19 +521,8 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		}
 	}
 
-	// Update metadata fields from payload
-	result.State.MBTI = payload.MBTI
-	result.State.MBTIConfidence = payload.MBTIConfidence
-	result.State.GeometryRep = payload.GeometryRep
-	result.State.CurrentMood = payload.CurrentMood
-	result.State.Philosophy = payload.Philosophy
-	result.State.CurrentSelfReflection = payload.SelfReflection
-
-	// Calculate final sequence number (used for MBTI timeline and snapshot)
-	finalSeq := result.Sequence
-	if len(payload.Operations) > 0 {
-		finalSeq = nextSeq + int64(len(payload.Operations)) - 1
-	}
+	// Calculate final sequence number (metadata event + operation events)
+	finalSeq := nextSeq + int64(len(payload.Operations))
 
 	// Check if MBTI changed and update agent record + insert timeline record
 	newMBTI := payload.MBTI
