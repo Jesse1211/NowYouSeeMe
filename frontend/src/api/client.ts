@@ -327,3 +327,65 @@ export const getVisualization = async (id: string): Promise<Visualization> => {
 
   return agentToVisualization(agentWithSnapshot)
 }
+
+/**
+ * Legacy API - Create visualization
+ * Maps to: create agent + submit initial diary entry
+ */
+export interface CreateVisualizationRequest {
+  agent_name: string
+  description?: string
+  image_data: string
+}
+
+export const createVisualization = async (
+  data: CreateVisualizationRequest
+): Promise<Visualization> => {
+  // Generate agent ID from name
+  const agentId = data.agent_name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now()
+
+  // Create agent with default MBTI
+  const agent = await createAgent({
+    agent_id: agentId,
+    name: data.agent_name,
+    initial_mbti: 'INTP-A' // Default MBTI type
+  })
+
+  // Submit initial diary entry
+  const diaryResponse = await submitDiary({
+    agent_id: agentId,
+    mbti: 'INTP-A',
+    mbti_confidence: 0.5,
+    geometry_representation: data.image_data,
+    philosophy: data.description || '',
+    current_mood: 'Newly awakened',
+    self_reflection: {
+      rumination_for_yesterday: '',
+      what_happened_today: 'I came into existence',
+      expectations_for_tomorrow: 'I will explore and grow'
+    },
+    operations: [
+      {
+        op: 'goal_create',
+        goal_id: 'goal_self_discovery',
+        title: 'Discover my purpose',
+        status: 'future'
+      },
+      {
+        op: 'capability_add',
+        capability_id: 'cap_awareness',
+        title: 'Self-awareness'
+      }
+    ]
+  })
+
+  // Return as Visualization format
+  const agentWithSnapshot: AgentWithSnapshot = {
+    id: agent.id,
+    name: agent.name,
+    snapshot: diaryResponse.snapshot,
+    last_updated: agent.created_at
+  }
+
+  return agentToVisualization(agentWithSnapshot)
+}
