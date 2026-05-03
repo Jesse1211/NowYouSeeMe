@@ -436,3 +436,25 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 
 	return currentState, nil
 }
+
+// insertMBTITimeline inserts a new MBTI timeline record
+func (s *PostgresStore) insertMBTITimeline(
+	tx *sql.Tx,
+	agentID string,
+	mbti string,
+	diaryID string,
+	eventSequence int64,
+) error {
+	query := `
+		INSERT INTO agent_mbti_timeline (
+			agent_id, mbti, effective_from, diary_id, event_sequence
+		) VALUES ($1, $2, NOW(), $3, $4)
+	`
+
+	_, err := tx.Exec(query, agentID, mbti, diaryID, eventSequence)
+	if err != nil {
+		return fmt.Errorf("failed to insert MBTI timeline: %w", err)
+	}
+
+	return nil
+}
