@@ -91,6 +91,7 @@ func OperationToEvent(op models.Operation, agentID, diaryID string, sequenceNum 
 		FromStatus:   op.FromStatus,
 		ToStatus:     op.ToStatus,
 		Reason:       op.Reason,
+		Checkpoint:   op.Checkpoint,
 		CapabilityID: op.CapabilityID,
 		LimitationID: op.LimitationID,
 		AspirationID: op.AspirationID,

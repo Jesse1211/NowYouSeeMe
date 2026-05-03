@@ -48,6 +48,7 @@ type Operation struct {
 	FromStatus string  `json:"from_status,omitempty"`
 	ToStatus   string  `json:"to_status,omitempty"`
 	Reason     string  `json:"reason,omitempty"`
+	Checkpoint string  `json:"checkpoint,omitempty"`
 
 	// Capability operations
 	CapabilityID string `json:"capability_id,omitempty"`
