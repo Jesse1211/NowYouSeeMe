@@ -76,7 +76,7 @@ CREATE TABLE agent_mbti_timeline (
   agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
   mbti TEXT NOT NULL,
   effective_from TIMESTAMPTZ NOT NULL,
-  diary_id TEXT NOT NULL REFERENCES agent_diary_versions(id) ON DELETE CASCADE,
+  diary_id TEXT REFERENCES agent_diary_versions(id) ON DELETE CASCADE,  -- Nullable for initial agent creation
   event_sequence BIGINT NOT NULL,
 
   UNIQUE(agent_id, effective_from)

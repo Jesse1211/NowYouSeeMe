@@ -19,30 +19,27 @@ func GetGallery(store *storage.PostgresStore) gin.HandlerFunc {
 		}
 
 		type AgentWithSnapshot struct {
-			ID          string             `json:"id"`
-			Name        string             `json:"name"`
-			Snapshot    *models.AgentState `json:"snapshot"`
-			LastUpdated string             `json:"last_updated"`
+			ID       string                      `json:"id"`
+			Name     string                      `json:"name"`
+			Snapshot *models.AgentSnapshotResult `json:"snapshot"`
 		}
 
 		results := []AgentWithSnapshot{}
 		for _, agent := range agents {
-			snapshot, _, err := store.GetLatestSnapshot(agent.ID)
+			result, err := store.GetLatestSnapshot(agent.ID)
 			if err != nil {
-				continue // Skip agents with errors
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "agent_id": agent.ID})
+				return
 			}
 
-			snapshotDB, _ := store.GetSnapshot(agent.ID)
-			lastUpdated := ""
-			if snapshotDB != nil {
-				lastUpdated = snapshotDB.UpdatedAt.Format("2006-01-02T15:04:05Z07:00")
+			if result == nil {
+				continue
 			}
 
 			results = append(results, AgentWithSnapshot{
-				ID:          agent.ID,
-				Name:        agent.Name,
-				Snapshot:    snapshot,
-				LastUpdated: lastUpdated,
+				ID:       agent.ID,
+				Name:     agent.Name,
+				Snapshot: result,
 			})
 		}
 
@@ -62,7 +59,7 @@ func GetSnapshot(store *storage.PostgresStore) gin.HandlerFunc {
 			return
 		}
 
-		snapshot, _, err := store.GetLatestSnapshot(agentID)
+		result, err := store.GetLatestSnapshot(agentID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found", "agent_id": agentID})
 			return
@@ -70,7 +67,7 @@ func GetSnapshot(store *storage.PostgresStore) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"agent_id": agentID,
-			"snapshot": snapshot,
+			"snapshot": result,
 		})
 	}
 }
@@ -91,31 +88,23 @@ func GetSnapshotsByMBTI(store *storage.PostgresStore) gin.HandlerFunc {
 			return
 		}
 
-		type Result struct {
-			AgentID   string             `json:"agent_id"`
-			Snapshot  *models.AgentState `json:"snapshot"`
-			UpdatedAt string             `json:"updated_at"`
-		}
-
-		results := []Result{}
+		results := []models.Result{}
 
 		// Only fetch full state for matched agents
 		for _, agentID := range agentIDs {
-			snapshot, _, err := store.GetLatestSnapshot(agentID)
+			result, err := store.GetLatestSnapshot(agentID)
 			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "agent_id": agentID})
+				return
+			}
+
+			if result == nil || !result.HasSnapshot() {
 				continue
 			}
 
-			snapshotDB, _ := store.GetSnapshot(agentID)
-			updatedAt := ""
-			if snapshotDB != nil {
-				updatedAt = snapshotDB.UpdatedAt.Format("2006-01-02T15:04:05Z07:00")
-			}
-
-			results = append(results, Result{
-				AgentID:   agentID,
-				Snapshot:  snapshot,
-				UpdatedAt: updatedAt,
+			results = append(results, models.Result{
+				AgentID:  agentID,
+				Snapshot: result,
 			})
 		}
 
@@ -147,12 +136,12 @@ func GetTimeline(store *storage.PostgresStore) gin.HandlerFunc {
 			SequenceNumber int64                  `json:"sequence_number"`
 			EventType      string                 `json:"event_type"`
 			Timestamp      string                 `json:"timestamp"`
-			Payload        map[string]interface{} `json:"payload"`
+			Payload        map[string]any         `json:"payload"`
 		}
 
 		results := []EventResponse{}
 		for _, event := range events {
-			var payload map[string]interface{}
+			var payload map[string]any
 			json.Unmarshal(event.Payload, &payload)
 
 			results = append(results, EventResponse{

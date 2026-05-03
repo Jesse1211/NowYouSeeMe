@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -49,4 +50,27 @@ func NewEmptyState() *AgentState {
 		Limitations:  make(map[string]Entity),
 		Aspirations:  make(map[string]Entity),
 	}
+}
+
+// AgentSnapshotResult encapsulates the complete snapshot information
+// following DDD principles - a rich domain object
+type AgentSnapshotResult struct {
+	AgentID   string      `json:"agent_id"`
+	State     *AgentState `json:"state"`
+	Sequence  int64       `json:"sequence"`
+	UpdatedAt *time.Time  `json:"updated_at,omitempty"`
+}
+
+// HasSnapshot returns true if this result contains a valid snapshot
+func (r *AgentSnapshotResult) HasSnapshot() bool {
+	return r.UpdatedAt != nil
+}
+
+// FormattedUpdatedAt returns the UpdatedAt timestamp in ISO 8601 format
+// Returns empty string if no snapshot exists
+func (r *AgentSnapshotResult) FormattedUpdatedAt() (string, error) {
+	if r.UpdatedAt == nil {
+		return "", fmt.Errorf("no snapshot available")
+	}
+	return r.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
 }

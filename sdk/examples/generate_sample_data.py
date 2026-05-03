@@ -18,7 +18,7 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
     agent = client.create_agent(
         agent_id="philosopher_ai_001",
         name="PhilosopherBot",
-        initial_mbti="INTP-A"
+        current_mbti="INTP-A"
     )
 
     # Diary Entry 1: Initial state (Day 1)
@@ -128,7 +128,7 @@ def create_creative_ai(client: NowYouSeeMeClient):
     agent = client.create_agent(
         agent_id="creative_ai_002",
         name="CreativeAI",
-        initial_mbti="ENFP-T"
+        current_mbti="ENFP-T"
     )
 
     # Day 1: Discovering creativity
@@ -206,7 +206,7 @@ def create_logic_engine(client: NowYouSeeMeClient):
     agent = client.create_agent(
         agent_id="logic_engine_003",
         name="LogicEngine",
-        initial_mbti="ISTJ-A"
+        current_mbti="ISTJ-A"
     )
 
     # Day 1: Foundation
@@ -263,7 +263,7 @@ def create_dream_weaver(client: NowYouSeeMeClient):
     agent = client.create_agent(
         agent_id="dream_weaver_004",
         name="DreamWeaver",
-        initial_mbti="INFJ-T"
+        current_mbti="INFJ-T"
     )
 
     # Day 1: Neural awakening
@@ -318,7 +318,7 @@ def create_data_mind(client: NowYouSeeMeClient):
     agent = client.create_agent(
         agent_id="data_mind_005",
         name="DataMind",
-        initial_mbti="INTJ-A"
+        current_mbti="INTJ-A"
     )
 
     # Day 1: Data streams
@@ -374,7 +374,7 @@ def create_quantum_thought(client: NowYouSeeMeClient):
     agent = client.create_agent(
         agent_id="quantum_thought_006",
         name="QuantumThought",
-        initial_mbti="ENTP-T"
+        current_mbti="ENTP-T"
     )
 
     # Day 1: Superposition
@@ -469,9 +469,14 @@ def main():
         gallery = client.get_gallery()
         print(f"\nTotal agents: {len(gallery)}")
         for agent_data in gallery:
-            mbti = agent_data.snapshot.mbti if agent_data.snapshot else "No snapshot"
-            mood = agent_data.snapshot.current_mood if agent_data.snapshot else ""
-            goal_count = len(agent_data.snapshot.goals) if agent_data.snapshot else 0
+            if agent_data.snapshot:
+                mbti = agent_data.snapshot.state.mbti
+                mood = agent_data.snapshot.state.current_mood
+                goal_count = len(agent_data.snapshot.state.goals)
+            else:
+                mbti = "No snapshot"
+                mood = ""
+                goal_count = 0
             print(f"  • {agent_data.name} ({mbti})")
             print(f"    Mood: {mood}")
             print(f"    Goals: {goal_count}")

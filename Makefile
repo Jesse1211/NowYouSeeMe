@@ -27,9 +27,21 @@ frontend: ## Start frontend dev server
 	@echo "$(GREEN)Starting frontend dev server...$(NC)"
 	cd frontend && npm run dev
 
-demo: ## Generate sample demo data (6 agents with evolution)
-	@echo "$(GREEN)Generating sample data...$(NC)"
-	cd sdk && python3 examples/generate_sample_data.py
+demo: ## Generate quick demo data (6 agents)
+	@echo "$(GREEN)Generating quick demo data...$(NC)"
+	cd sdk && python3 scripts/seed_database.py --preset quick
+
+demo-full: ## Generate full dataset (17 agents with rich history)
+	@echo "$(GREEN)Generating full dataset...$(NC)"
+	cd sdk && python3 scripts/seed_database.py --preset full
+
+demo-mbti: ## Generate MBTI diversity (32 agents, one per type)
+	@echo "$(GREEN)Generating MBTI diversity dataset...$(NC)"
+	cd sdk && python3 scripts/seed_database.py --preset mbti
+
+demo-custom: ## Generate custom dataset (use NUM=N ENTRIES=E)
+	@echo "$(GREEN)Generating custom dataset...$(NC)"
+	cd sdk && python3 scripts/seed_database.py --custom -n $(NUM) -e $(ENTRIES)
 
 ##@ Database
 

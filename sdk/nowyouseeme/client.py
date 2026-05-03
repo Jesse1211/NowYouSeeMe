@@ -5,7 +5,7 @@ This client supports the new Event Sourcing architecture where agents submit dia
 with operations to evolve their state over time.
 """
 
-import base64
+import re
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -90,16 +90,31 @@ class Agent:
     """Represents an AI Agent in the system"""
     id: str
     name: str
-    initial_mbti: str
+    current_mbti: str
     created_at: datetime
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Agent':
+        # Parse timestamp - handle various formats from backend
+        timestamp_str = data['created_at'].replace('Z', '+00:00')
+
+        # Handle Go's variable-precision timestamps by normalizing to 6 digits of microseconds
+        # Example: 2026-05-03T19:03:29.6392+08:00 -> 2026-05-03T19:03:29.639200+08:00
+        # Match timestamp with fractional seconds
+        match = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\.(\d+)([\+\-]\d{2}:\d{2})', timestamp_str)
+        if match:
+            date_part, fractional, tz_part = match.groups()
+            # Pad or truncate fractional seconds to 6 digits
+            fractional = fractional.ljust(6, '0')[:6]
+            timestamp_str = f"{date_part}.{fractional}{tz_part}"
+
+        created_at = datetime.fromisoformat(timestamp_str)
+
         return cls(
             id=data['id'],
             name=data['name'],
-            initial_mbti=data['initial_mbti'],
-            created_at=datetime.fromisoformat(data['created_at'].replace('Z', '+00:00'))
+            current_mbti=data.get('current_mbti', data.get('initial_mbti', '')),
+            created_at=created_at
         )
 
 
@@ -135,24 +150,41 @@ class AgentState:
 
 
 @dataclass
+class AgentSnapshotResult:
+    """Complete snapshot result with metadata (DDD-style domain object)"""
+    agent_id: str
+    state: AgentState
+    sequence: int
+    updated_at: Optional[str]  # ISO 8601 timestamp
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'AgentSnapshotResult':
+        state_data = data.get('state', {})
+        return cls(
+            agent_id=data.get('agent_id', ''),
+            state=AgentState.from_dict(state_data),
+            sequence=data.get('sequence', 0),
+            updated_at=data.get('updated_at')
+        )
+
+
+@dataclass
 class AgentWithSnapshot:
     """Agent with its current state snapshot"""
     id: str
     name: str
-    snapshot: Optional[AgentState]
-    last_updated: str
+    snapshot: Optional[AgentSnapshotResult]
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'AgentWithSnapshot':
         snapshot = None
         if data.get('snapshot'):
-            snapshot = AgentState.from_dict(data['snapshot'])
+            snapshot = AgentSnapshotResult.from_dict(data['snapshot'])
 
         return cls(
             id=data['id'],
             name=data['name'],
-            snapshot=snapshot,
-            last_updated=data.get('last_updated', '')
+            snapshot=snapshot
         )
 
 
@@ -216,7 +248,7 @@ class NowYouSeeMeClient:
         self,
         agent_id: str,
         name: str,
-        initial_mbti: str
+        current_mbti: str
     ) -> Agent:
         """
         Create a new agent.
@@ -235,8 +267,10 @@ class NowYouSeeMeClient:
         payload = {
             "agent_id": agent_id,
             "name": name,
-            "initial_mbti": initial_mbti
+            "current_mbti": current_mbti
         }
+
+        print(f"======== Creating agent with ID: {agent_id}, Name: {name}, MBTI: {current_mbti}")
 
         response = self.session.post(
             f"{self.api_base_url}/agents",
@@ -280,8 +314,7 @@ class NowYouSeeMeClient:
         Raises:
             requests.RequestException: If the API request fails
         """
-        payload = {
-            "agent_id": agent_id,
+        diary_payload = {
             "mbti": mbti,
             "mbti_confidence": mbti_confidence,
             "geometry_representation": geometry_representation,
@@ -297,7 +330,12 @@ class NowYouSeeMeClient:
         }
 
         if diary_timestamp:
-            payload["diary_timestamp"] = diary_timestamp.isoformat()
+            diary_payload["diary_timestamp"] = diary_timestamp.isoformat()
+
+        payload = {
+            "agent_id": agent_id,
+            "payload": diary_payload
+        }
 
         response = self.session.post(
             f"{self.api_base_url}/diaries",
@@ -306,7 +344,12 @@ class NowYouSeeMeClient:
         response.raise_for_status()
 
         result = response.json()
-        return AgentState.from_dict(result['snapshot'])
+        # API returns snapshot as AgentSnapshotResult
+        snapshot_data = result.get('snapshot')
+        if snapshot_data:
+            snapshot_result = AgentSnapshotResult.from_dict(snapshot_data)
+            return snapshot_result.state
+        return AgentState.from_dict({})
 
     def get_gallery(self) -> List[AgentWithSnapshot]:
         """
@@ -344,12 +387,13 @@ class NowYouSeeMeClient:
         response.raise_for_status()
 
         data = response.json()
+        snapshot_data = data.get('snapshot')
         return {
             'agent': Agent.from_dict(data['agent']),
-            'snapshot': AgentState.from_dict(data['snapshot']) if data.get('snapshot') else None
+            'snapshot': AgentSnapshotResult.from_dict(snapshot_data) if snapshot_data else None
         }
 
-    def get_snapshot(self, agent_id: str) -> AgentState:
+    def get_snapshot(self, agent_id: str) -> AgentSnapshotResult:
         """
         Get current state snapshot for an agent.
 
@@ -357,7 +401,7 @@ class NowYouSeeMeClient:
             agent_id: ID of the agent
 
         Returns:
-            Current AgentState
+            AgentSnapshotResult with complete snapshot info
 
         Raises:
             requests.RequestException: If the API request fails
@@ -369,7 +413,16 @@ class NowYouSeeMeClient:
         response.raise_for_status()
 
         data = response.json()
-        return AgentState.from_dict(data['snapshot'])
+        snapshot_data = data.get('snapshot')
+        if snapshot_data:
+            return AgentSnapshotResult.from_dict(snapshot_data)
+        # Return empty snapshot if none exists
+        return AgentSnapshotResult(
+            agent_id=agent_id,
+            state=AgentState.from_dict({}),
+            sequence=0,
+            updated_at=None
+        )
 
     def get_timeline(self, agent_id: str) -> List[Dict[str, Any]]:
         """

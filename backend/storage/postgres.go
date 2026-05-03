@@ -48,8 +48,8 @@ func (s *PostgresStore) CreateAgent(req *models.CreateAgentRequest) (*models.Age
 		return nil, fmt.Errorf("failed to create agent: %w", err)
 	}
 
-	// Insert initial MBTI timeline record
-	err = s.insertMBTITimeline(tx, agent.ID, agent.CurrentMBTI, "initial", 0)
+	// Insert initial MBTI timeline record (no diary yet, so diary_id is NULL)
+	err = s.insertMBTITimelineNullable(tx, agent.ID, agent.CurrentMBTI, nil, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -309,34 +309,35 @@ func (s *PostgresStore) UpsertSnapshot(agentID, diaryID string, state *models.Ag
 }
 
 // GetLatestSnapshot builds latest snapshot using WAL pattern
-func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentState, int64, error) {
+// Returns a rich domain object encapsulating all snapshot information
+func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentSnapshotResult, error) {
 	// Load latest snapshot
 	snapshot, err := s.GetSnapshot(agentID)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get snapshot: %w", err)
+		return nil, fmt.Errorf("failed to get snapshot: %w", err)
 	}
 
-	// No snapshot exists yet - first diary submission
+	// No snapshot exists yet - just created account without any diary submission
 	if snapshot == nil {
-		return models.NewEmptyState(), 0, nil
+		return nil, nil
 	}
 
 	// Parse snapshot state
 	var state models.AgentState
 	if err := json.Unmarshal(snapshot.State, &state); err != nil {
-		return nil, 0, fmt.Errorf("failed to unmarshal snapshot state: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal snapshot state: %w", err)
 	}
 
 	// Load uncommitted events (WAL)
 	uncommittedEvents, err := s.GetUncommittedEvents(agentID, snapshot.LastEventSequence)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get uncommitted events: %w", err)
+		return nil, fmt.Errorf("failed to get uncommitted events: %w", err)
 	}
 
 	// Replay uncommitted events onto snapshot
 	latestSnapshot, err := ReplayEvents(&state, uncommittedEvents)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to replay events: %w", err)
+		return nil, fmt.Errorf("failed to replay events: %w", err)
 	}
 
 	// Calculate current sequence
@@ -345,7 +346,12 @@ func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentState, i
 		latestSeq = uncommittedEvents[len(uncommittedEvents)-1].SequenceNumber
 	}
 
-	return latestSnapshot, latestSeq, nil
+	return &models.AgentSnapshotResult{
+		AgentID:   agentID,
+		State:     latestSnapshot,
+		Sequence:  latestSeq,
+		UpdatedAt: &snapshot.UpdatedAt,
+	}, nil
 }
 
 // AcquireLock acquires pessimistic lock for agent
@@ -394,16 +400,26 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	}
 
 	// Build current state using WAL
-	latestSnapshot, latestSeq, err := s.GetLatestSnapshot(agentID)
+	result, err := s.GetLatestSnapshot(agentID)
 	if err != nil {
 		return nil, err
 	}
 
+	// Handle first diary submission - no snapshot exists yet
+	if result == nil {
+		result = &models.AgentSnapshotResult{
+			AgentID:   agentID,
+			State:     models.NewEmptyState(),
+			Sequence:  0,
+			UpdatedAt: nil,
+		}
+	}
+
 	// Track old MBTI before applying changes
-	latestMBTI := latestSnapshot.MBTI
+	latestMBTI := result.State.MBTI
 
 	// Validate operations
-	if err := validation.ValidateOperations(payload.Operations, latestSnapshot); err != nil {
+	if err := validation.ValidateOperations(payload.Operations, result.State); err != nil {
 		return nil, err
 	}
 
@@ -414,7 +430,7 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	}
 
 	// Get next sequence number
-	nextSeq := latestSeq + 1
+	nextSeq := result.Sequence + 1
 
 	// Create and insert events
 	for i, op := range payload.Operations {
@@ -428,27 +444,34 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		}
 
 		// Apply event to current state
-		if err := ApplyEvent(latestSnapshot, event); err != nil {
+		if err := ApplyEvent(result.State, event); err != nil {
 			return nil, fmt.Errorf("failed to apply event to state: %w", err)
 		}
 	}
 
 	// Update metadata fields from payload
-	latestSnapshot.MBTI = payload.MBTI
-	latestSnapshot.MBTIConfidence = payload.MBTIConfidence
-	latestSnapshot.GeometryRep = payload.GeometryRep
-	latestSnapshot.CurrentMood = payload.CurrentMood
-	latestSnapshot.Philosophy = payload.Philosophy
-	latestSnapshot.CurrentSelfReflection = payload.SelfReflection
+	result.State.MBTI = payload.MBTI
+	result.State.MBTIConfidence = payload.MBTIConfidence
+	result.State.GeometryRep = payload.GeometryRep
+	result.State.CurrentMood = payload.CurrentMood
+	result.State.Philosophy = payload.Philosophy
+	result.State.CurrentSelfReflection = payload.SelfReflection
 
-	// Check if MBTI changed and insert timeline record
+	// Check if MBTI changed and update agent record + insert timeline record
 	newMBTI := payload.MBTI
 	if newMBTI != latestMBTI {
 		finalSeq := nextSeq + int64(len(payload.Operations)) - 1
 		if len(payload.Operations) == 0 {
-			finalSeq = latestSeq
+			finalSeq = result.Sequence
 		}
 
+		// Update agents.current_mbti
+		_, err = tx.Exec(`UPDATE agents SET current_mbti = $1 WHERE id = $2`, newMBTI, agentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update agent current_mbti: %w", err)
+		}
+
+		// Insert MBTI timeline record
 		err = s.insertMBTITimeline(tx, agentID, newMBTI, diaryID, finalSeq)
 		if err != nil {
 			return nil, err
@@ -458,10 +481,10 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	// Materialize snapshot (MVP: always)
 	finalSeq := nextSeq + int64(len(payload.Operations)) - 1
 	if len(payload.Operations) == 0 {
-		finalSeq = latestSeq
+		finalSeq = result.Sequence
 	}
 
-	if err := s.UpsertSnapshot(agentID, diaryID, latestSnapshot, finalSeq); err != nil {
+	if err := s.UpsertSnapshot(agentID, diaryID, result.State, finalSeq); err != nil {
 		return nil, err
 	}
 
@@ -470,7 +493,7 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return latestSnapshot, nil
+	return result.State, nil
 }
 
 // insertMBTITimeline inserts a new MBTI timeline record
@@ -495,16 +518,34 @@ func (s *PostgresStore) insertMBTITimeline(
 	return nil
 }
 
+// insertMBTITimelineNullable inserts a new MBTI timeline record with nullable diary_id
+func (s *PostgresStore) insertMBTITimelineNullable(
+	tx *sql.Tx,
+	agentID string,
+	mbti string,
+	diaryID *string,
+	eventSequence int64,
+) error {
+	query := `
+		INSERT INTO agent_mbti_timeline (
+			agent_id, mbti, effective_from, diary_id, event_sequence
+		) VALUES ($1, $2, NOW(), $3, $4)
+	`
+
+	_, err := tx.Exec(query, agentID, mbti, diaryID, eventSequence)
+	if err != nil {
+		return fmt.Errorf("failed to insert MBTI timeline: %w", err)
+	}
+
+	return nil
+}
+
 // GetAgentIDsByCurrentMBTI returns agent IDs with the specified current MBTI type
 func (s *PostgresStore) GetAgentIDsByCurrentMBTI(mbtiType string) ([]string, error) {
 	query := `
-		SELECT agent_id
-		FROM (
-			SELECT DISTINCT ON (agent_id) agent_id, mbti
-			FROM agent_mbti_timeline
-			ORDER BY agent_id, effective_from DESC
-		) latest
-		WHERE mbti = $1
+		SELECT id
+		FROM agents
+		WHERE current_mbti = $1
 	`
 
 	rows, err := s.db.Query(query, mbtiType)
