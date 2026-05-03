@@ -140,6 +140,53 @@ instead of embedding Base64 data in API requests.
 **References**:
 - backend/storage/postgres.go:8 - validation import commented
 
+### ADR-007: Backend Security and Reliability Improvements
+
+**Status**: Implemented
+
+**Date**: 2026-05-04
+
+**Context**: Code review identified several security vulnerabilities and reliability issues in the backend implementation.
+
+**Decisions Implemented**:
+
+1. **AgentID Format Validation**
+   - Enforce alphanumeric + underscore + hyphen only
+   - Length limit: 1-100 characters
+   - Applied to all API endpoints
+
+2. **Transaction Timeouts**
+   - 5-second timeout on all database transactions
+   - Prevents indefinite lock holding
+   - Uses context.WithTimeout
+
+3. **Unified Locking Strategy**
+   - Always lock agents table (not conditional on snapshot existence)
+   - Prevents potential deadlocks
+   - Consistent locking behavior
+
+4. **Event Sourcing Purity**
+   - All state changes via events (including metadata)
+   - Created `metadata_update` event type
+   - Removes direct state assignments
+   - Enables complete state reconstruction from events
+
+5. **Code Quality**
+   - Eliminated duplicate finalSeq calculations
+   - Added missing Checkpoint field to Operation model
+   - Optimized WAL replay (skip if no uncommitted events)
+
+**Consequences**:
+- Improved security (format validation prevents injection)
+- Better reliability (transaction timeouts prevent hangs)
+- Consistent event sourcing (full audit trail)
+- Cleaner codebase (removed duplication)
+
+**Implementation Details**:
+- See commits: b07fcbc, 9babee0, fa25545, ecbcded, 39724d1, 24f296e, cbacdfe
+- New file: backend/validation/agent_id.go
+- Modified: postgres.go, event_sourcing.go, diary.go, event.go
+
 ## Code Patterns
 
 ### Backend (Golang) - API Handlers
