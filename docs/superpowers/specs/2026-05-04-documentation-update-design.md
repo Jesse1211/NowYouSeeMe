@@ -45,7 +45,8 @@ The following documents describe the old Visualization CRUD API and are no longe
 - `sdk/QUICK_REFERENCE.md`
 - `sdk/SCRIPTS_GUIDE.md`
 - `sdk/TESTING_GUIDE.md`
-- `sdk/scripts/README.md`
+
+**Note:** `sdk/scripts/README.md` is kept - it documents current Event Sourcing seed scripts.
 
 ---
 
@@ -560,10 +561,11 @@ rm sdk/README.md
 rm sdk/QUICK_REFERENCE.md
 rm sdk/SCRIPTS_GUIDE.md
 rm sdk/TESTING_GUIDE.md
-rm sdk/scripts/README.md
 ```
 
 **Rationale**: These files document the old Visualization CRUD API which no longer exists. Keeping them causes confusion and provides incorrect information to both developers and Claude Code.
+
+**Preserved**: `sdk/scripts/README.md` is kept because it documents the current Event Sourcing seed scripts (`seed_database.py`, `generate_fake_agents.py`) which are actively used for populating the database with test data.
 
 ---
 
