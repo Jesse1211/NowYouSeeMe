@@ -30,14 +30,33 @@ func (s *PostgresStore) CreateAgent(req *models.CreateAgentRequest) (*models.Age
 		CreatedAt:   time.Now(),
 	}
 
+	// Begin transaction
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Insert agent record
 	query := `
 		INSERT INTO agents (id, name, initial_mbti, created_at)
 		VALUES ($1, $2, $3, $4)
 	`
 
-	_, err := s.db.Exec(query, agent.ID, agent.Name, agent.InitialMBTI, agent.CreatedAt)
+	_, err = tx.Exec(query, agent.ID, agent.Name, agent.InitialMBTI, agent.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create agent: %w", err)
+	}
+
+	// Insert initial MBTI timeline record
+	err = s.insertMBTITimeline(tx, agent.ID, agent.InitialMBTI, "initial", 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return agent, nil
