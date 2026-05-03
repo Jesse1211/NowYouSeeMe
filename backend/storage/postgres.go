@@ -373,20 +373,25 @@ func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentSnapshot
 	}
 
 	// Load uncommitted events (WAL)
+	// Note: In current implementation, snapshots are materialized after every diary submission,
+	// so uncommittedEvents should typically be empty. WAL replay only occurs during:
+	// 1. Concurrent reads while another transaction is committing
+	// 2. Recovery scenarios if snapshot update failed but events were persisted
 	uncommittedEvents, err := s.GetUncommittedEvents(agentID, snapshot.LastEventSequence)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get uncommitted events: %w", err)
 	}
 
-	// Replay uncommitted events onto snapshot
-	latestSnapshot, err := ReplayEvents(&state, uncommittedEvents)
-	if err != nil {
-		return nil, fmt.Errorf("failed to replay events: %w", err)
-	}
-
-	// Calculate current sequence
+	// Optimize: Skip replay if no uncommitted events (common case)
+	latestSnapshot := &state
 	latestSeq := snapshot.LastEventSequence
+
 	if len(uncommittedEvents) > 0 {
+		// Replay uncommitted events onto snapshot
+		latestSnapshot, err = ReplayEvents(&state, uncommittedEvents)
+		if err != nil {
+			return nil, fmt.Errorf("failed to replay events: %w", err)
+		}
 		latestSeq = uncommittedEvents[len(uncommittedEvents)-1].SequenceNumber
 	}
 
@@ -540,8 +545,11 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		}
 	}
 
-	// Materialize snapshot (MVP: always)
-
+	// Materialize snapshot (Current strategy: Always materialize after each diary submission)
+	// This ensures minimal WAL replay overhead on reads. Alternative strategies:
+	// - Conditional: Only materialize every N diary submissions (trades write performance for read performance)
+	// - Threshold: Only materialize if uncommitted events exceed threshold
+	// Current "always materialize" is optimal for read-heavy workloads.
 	if err := s.upsertSnapshotTx(tx, agentID, diaryID, result.State, finalSeq); err != nil {
 		return nil, err
 	}
