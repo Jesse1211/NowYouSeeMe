@@ -411,12 +411,6 @@ func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentSnapshot
 		return nil, nil
 	}
 
-	// Parse snapshot state
-	var state models.AgentState
-	if err := json.Unmarshal(snapshot.State, &state); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal snapshot state: %w", err)
-	}
-
 	// Load uncommitted events (WAL) within same transaction for consistency
 	// Note: In current implementation, snapshots are materialized after every diary submission,
 	// so uncommittedEvents should typically be empty. WAL replay only occurs during:
@@ -432,24 +426,26 @@ func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentSnapshot
 		return nil, fmt.Errorf("failed to commit read transaction: %w", err)
 	}
 
-	// Optimize: Skip replay if no uncommitted events (common case)
-	latestSnapshot := &state
-	latestSeq := snapshot.LastEventSequence
-
+	// Replay uncommitted events onto snapshot (updates both state and metadata)
+	latestSnapshot := snapshot
 	if len(uncommittedEvents) > 0 {
-		// Replay uncommitted events onto snapshot
-		latestSnapshot, err = ReplayEvents(&state, uncommittedEvents)
+		latestSnapshot, err = ReplayEventsOnSnapshot(snapshot, uncommittedEvents)
 		if err != nil {
 			return nil, fmt.Errorf("failed to replay events: %w", err)
 		}
-		latestSeq = uncommittedEvents[len(uncommittedEvents)-1].SequenceNumber
+	}
+
+	// Parse state for API response
+	var state models.AgentState
+	if err := json.Unmarshal(latestSnapshot.State, &state); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal snapshot state: %w", err)
 	}
 
 	return &models.AgentSnapshotResult{
-		AgentID:   agentID,
-		State:     latestSnapshot,
-		Sequence:  latestSeq,
-		UpdatedAt: &snapshot.UpdatedAt,
+		AgentID:   latestSnapshot.AgentID,
+		State:     &state,
+		Sequence:  latestSnapshot.LastEventSequence,
+		UpdatedAt: &latestSnapshot.UpdatedAt,
 	}, nil
 }
 

@@ -61,7 +61,7 @@ func GetAgents(store *storage.PostgresStore) gin.HandlerFunc {
 			}
 
 			// Get current snapshot with WAL
-			result, err := store.GetLatestSnapshot(agentID)
+			snapshot, err := store.GetLatestSnapshot(agentID)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -69,7 +69,7 @@ func GetAgents(store *storage.PostgresStore) gin.HandlerFunc {
 
 			c.JSON(http.StatusOK, gin.H{
 				"agent":    agent,
-				"snapshot": result,
+				"snapshot": snapshot,
 			})
 			return
 		}
