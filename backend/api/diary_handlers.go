@@ -33,11 +33,10 @@ func SubmitDiary(store *storage.PostgresStore) gin.HandlerFunc {
 		}
 
 		// Validate MBTI format
-		// TODO: Re-enable after fixing seed script state tracking
-		// if err := validation.ValidateMBTI(req.Payload.MBTI); err != nil {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		// 	return
-		// }
+		if err := validation.ValidateMBTI(req.Payload.MBTI); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
 		// Submit diary (validates, creates events, materializes snapshot)
 		snapshot, err := store.SubmitDiary(req.AgentID, &req.Payload)

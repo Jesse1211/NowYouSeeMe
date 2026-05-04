@@ -119,7 +119,7 @@ export const getGallery = async (): Promise<GetGalleryResponse> => {
  */
 export interface GetAgentsByMBTIResponse {
   mbti: string
-  agents: Array<{
+  snapshots: Array<{
     snapshot: AgentSnapshotResult
   }>
   count: number
@@ -306,7 +306,7 @@ export const getVisualizationsByMBTI = async (mbtiType: string): Promise<GetVisu
   const data = await getAgentsByMBTI(mbtiType)
 
   // Convert to AgentWithSnapshot format first
-  const agentsWithSnapshots: AgentWithSnapshot[] = data.agents.map(result => ({
+  const agentsWithSnapshots: AgentWithSnapshot[] = data.snapshots.map(result => ({
     id: result.snapshot.agent_id,
     name: result.snapshot.agent_id, // We don't have name in this endpoint
     snapshot: result.snapshot.state,

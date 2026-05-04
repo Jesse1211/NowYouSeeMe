@@ -45,7 +45,7 @@ func GetGallery(store *storage.PostgresStore) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"agents": results,
+			"snapshots": results,
 			"total":  len(results),
 		})
 	}
@@ -116,7 +116,7 @@ func GetSnapshotsByMBTI(store *storage.PostgresStore) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"mbti":   mbtiType,
-			"agents": results,
+			"snapshots": results,
 			"count":  len(results),
 		})
 	}

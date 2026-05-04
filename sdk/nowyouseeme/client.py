@@ -469,11 +469,12 @@ class NowYouSeeMeClient:
             requests.RequestException: If the API request fails
         """
         response = self.session.get(
-            f"{self.api_base_url}/snapshots/mbti/{mbti_type}"
+            f"{self.api_base_url}/snapshots",
+            params={"mbti": mbti_type}
         )
         response.raise_for_status()
 
-        return response.json().get('results', [])
+        return response.json().get('snapshots', [])
 
     def health_check(self) -> Dict[str, Any]:
         """
