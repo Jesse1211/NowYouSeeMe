@@ -221,6 +221,11 @@ func (s *PostgresStore) GetNextSequenceNumber(agentID string) (int64, error) {
 
 // GetUncommittedEvents retrieves events after a sequence number
 func (s *PostgresStore) GetUncommittedEvents(agentID string, afterSequence int64) ([]*models.Event, error) {
+	return s.getUncommittedEventsTx(nil, agentID, afterSequence)
+}
+
+// getUncommittedEventsTx retrieves events within a transaction or using default connection
+func (s *PostgresStore) getUncommittedEventsTx(tx *sql.Tx, agentID string, afterSequence int64) ([]*models.Event, error) {
 	query := `
 		SELECT event_id, agent_id, diary_id, event_type, timestamp, payload, sequence_number
 		FROM events
@@ -228,7 +233,15 @@ func (s *PostgresStore) GetUncommittedEvents(agentID string, afterSequence int64
 		ORDER BY sequence_number ASC
 	`
 
-	rows, err := s.db.Query(query, agentID, afterSequence)
+	var rows *sql.Rows
+	var err error
+
+	if tx != nil {
+		rows, err = tx.Query(query, agentID, afterSequence)
+	} else {
+		rows, err = s.db.Query(query, agentID, afterSequence)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to query uncommitted events: %w", err)
 	}
@@ -291,6 +304,11 @@ func (s *PostgresStore) GetEventsByAgent(agentID string) ([]*models.Event, error
 
 // GetSnapshot retrieves the latest snapshot for an agent
 func (s *PostgresStore) GetSnapshot(agentID string) (*models.AgentStateSnapshot, error) {
+	return s.getSnapshotTx(nil, agentID)
+}
+
+// getSnapshotTx retrieves snapshot within a transaction or using default connection
+func (s *PostgresStore) getSnapshotTx(tx *sql.Tx, agentID string) (*models.AgentStateSnapshot, error) {
 	query := `
 		SELECT agent_id, derived_from_diary_id, last_event_sequence, updated_at, state
 		FROM agent_state_snapshots
@@ -298,13 +316,25 @@ func (s *PostgresStore) GetSnapshot(agentID string) (*models.AgentStateSnapshot,
 	`
 
 	snapshot := &models.AgentStateSnapshot{}
-	err := s.db.QueryRow(query, agentID).Scan(
-		&snapshot.AgentID,
-		&snapshot.DerivedFromDiaryID,
-		&snapshot.LastEventSequence,
-		&snapshot.UpdatedAt,
-		&snapshot.State,
-	)
+	var err error
+
+	if tx != nil {
+		err = tx.QueryRow(query, agentID).Scan(
+			&snapshot.AgentID,
+			&snapshot.DerivedFromDiaryID,
+			&snapshot.LastEventSequence,
+			&snapshot.UpdatedAt,
+			&snapshot.State,
+		)
+	} else {
+		err = s.db.QueryRow(query, agentID).Scan(
+			&snapshot.AgentID,
+			&snapshot.DerivedFromDiaryID,
+			&snapshot.LastEventSequence,
+			&snapshot.UpdatedAt,
+			&snapshot.State,
+		)
+	}
 
 	if err == sql.ErrNoRows {
 		return nil, nil // No snapshot exists yet
@@ -353,17 +383,31 @@ func (s *PostgresStore) upsertSnapshotTx(tx *sql.Tx, agentID, diaryID string, st
 	return nil
 }
 
-// GetLatestSnapshot builds latest snapshot using WAL pattern
+// GetLatestSnapshot builds latest snapshot using WAL pattern with transactional consistency
 // Returns a rich domain object encapsulating all snapshot information
 func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentSnapshotResult, error) {
-	// Load latest snapshot
-	snapshot, err := s.GetSnapshot(agentID)
+	// Use a read transaction to ensure consistent view of snapshot + uncommitted events
+	// This prevents race conditions where snapshot might be updated between the two reads
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{
+		ReadOnly: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin read transaction: %w", err)
+	}
+	defer tx.Rollback() // Safe to call even after commit
+
+	// Load latest snapshot within transaction
+	snapshot, err := s.getSnapshotTx(tx, agentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get snapshot: %w", err)
 	}
 
 	// No snapshot exists yet - just created account without any diary submission
 	if snapshot == nil {
+		tx.Commit() // Explicit commit for read-only transaction
 		return nil, nil
 	}
 
@@ -373,14 +417,19 @@ func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentSnapshot
 		return nil, fmt.Errorf("failed to unmarshal snapshot state: %w", err)
 	}
 
-	// Load uncommitted events (WAL)
+	// Load uncommitted events (WAL) within same transaction for consistency
 	// Note: In current implementation, snapshots are materialized after every diary submission,
 	// so uncommittedEvents should typically be empty. WAL replay only occurs during:
 	// 1. Concurrent reads while another transaction is committing
 	// 2. Recovery scenarios if snapshot update failed but events were persisted
-	uncommittedEvents, err := s.GetUncommittedEvents(agentID, snapshot.LastEventSequence)
+	uncommittedEvents, err := s.getUncommittedEventsTx(tx, agentID, snapshot.LastEventSequence)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get uncommitted events: %w", err)
+	}
+
+	// Commit read transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit read transaction: %w", err)
 	}
 
 	// Optimize: Skip replay if no uncommitted events (common case)
