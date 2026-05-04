@@ -110,7 +110,6 @@ func GetSnapshotsByMBTI(store *storage.PostgresStore) gin.HandlerFunc {
 			}
 
 			results = append(results, models.Result{
-				AgentID:  agentID,
 				Snapshot: result,
 			})
 		}

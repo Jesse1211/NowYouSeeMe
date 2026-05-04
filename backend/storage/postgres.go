@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"nowyouseeme/models"
+
 	// "nowyouseeme/validation" // TODO: Re-enable after fixing seed script
 	"time"
 
@@ -611,10 +612,10 @@ func (s *PostgresStore) GetAgentIDsByCurrentMBTI(mbtiType string) ([]string, err
 	query := `
 		SELECT id
 		FROM agents
-		WHERE current_mbti = $1
+		WHERE current_mbti like $1
 	`
 
-	rows, err := s.db.Query(query, mbtiType)
+	rows, err := s.db.Query(query, mbtiType+"%") // Use prefix match for flexibility (e.g. "INTJ" matches "INTJ-A" and "INTJ-T")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query agents by MBTI: %w", err)
 	}

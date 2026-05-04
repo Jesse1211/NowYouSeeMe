@@ -49,6 +49,13 @@ export interface AgentState {
   aspirations: Record<string, Entity>
 }
 
+export interface AgentSnapshotResult {
+  agent_id: string
+  state: AgentState
+  sequence: number
+  updated_at?: string
+}
+
 export interface AgentWithSnapshot {
   id: string
   name: string
@@ -113,9 +120,7 @@ export const getGallery = async (): Promise<GetGalleryResponse> => {
 export interface GetAgentsByMBTIResponse {
   mbti: string
   agents: Array<{
-    agent_id: string
-    snapshot: AgentState
-    updated_at: string
+    snapshot: AgentSnapshotResult
   }>
   count: number
 }
@@ -302,10 +307,10 @@ export const getVisualizationsByMBTI = async (mbtiType: string): Promise<GetVisu
 
   // Convert to AgentWithSnapshot format first
   const agentsWithSnapshots: AgentWithSnapshot[] = data.agents.map(result => ({
-    id: result.agent_id,
-    name: result.agent_id, // We don't have name in this endpoint
-    snapshot: result.snapshot,
-    last_updated: result.updated_at
+    id: result.snapshot.agent_id,
+    name: result.snapshot.agent_id, // We don't have name in this endpoint
+    snapshot: result.snapshot.state,
+    last_updated: result.snapshot.updated_at || ''
   }))
 
   return {
