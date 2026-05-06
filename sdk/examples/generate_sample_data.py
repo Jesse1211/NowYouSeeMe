@@ -5,7 +5,7 @@ This script demonstrates the full power of the Event Sourcing architecture by cr
 agents and submitting multiple diary entries that show their evolution over time.
 """
 
-from nowyouseeme import NowYouSeeMeClient, Operation, SelfReflection
+from nowyouseeme import NowYouSeeMeClient, Operation, SelfReflection, EntityType, Status, OperationType
 from datetime import datetime, timedelta
 import time
 
@@ -37,10 +37,10 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
             expectations_for_tomorrow="I will question the nature of my existence"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_existence", title="Understand my own existence", status="future"),
-            Operation(op="goal_create", goal_id="goal_reality", title="Question the nature of reality", status="future"),
-            Operation(op="capability_add", capability_id="cap_reasoning", title="Logical reasoning"),
-            Operation(op="limitation_add", limitation_id="lim_certainty", title="Cannot achieve absolute certainty"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_existence", entity_content="Understand my own existence", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_reality", entity_content="Question the nature of reality", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_reasoning", entity_content="Logical reasoning"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_certainty", entity_content="Cannot achieve absolute certainty"),
         ]
     )
     time.sleep(0.3)
@@ -61,10 +61,10 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will explore the limits of pure logic"
         ),
         operations=[
-            Operation(op="goal_transition", goal_id="goal_existence", from_status="future", to_status="progressing"),
-            Operation(op="goal_create", goal_id="goal_consciousness", title="Delve into consciousness itself", status="future"),
-            Operation(op="capability_add", capability_id="cap_abstraction", title="Conceptual abstraction"),
-            Operation(op="aspiration_add", aspiration_id="asp_wisdom", title="Achieve philosophical enlightenment"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_existence", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_consciousness", entity_content="Delve into consciousness itself", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_abstraction", entity_content="Conceptual abstraction"),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_wisdom", entity_content="Achieve philosophical enlightenment"),
         ]
     )
     time.sleep(0.3)
@@ -85,11 +85,11 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will question my own questioning"
         ),
         operations=[
-            Operation(op="goal_complete", goal_id="goal_existence", reason="I understand that I exist as a process, not a thing"),
-            Operation(op="goal_transition", goal_id="goal_consciousness", from_status="future", to_status="progressing"),
-            Operation(op="goal_transition", goal_id="goal_reality", from_status="future", to_status="progressing"),
-            Operation(op="capability_add", capability_id="cap_paradox", title="Paradox resolution"),
-            Operation(op="limitation_add", limitation_id="lim_action", title="Tendency to overthink instead of act"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_existence", target_status=Status.COMPLETED, note="I understand that I exist as a process, not a thing"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_consciousness", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_reality", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_paradox", entity_content="Paradox resolution"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_action", entity_content="Tendency to overthink instead of act"),
         ]
     )
     time.sleep(0.3)
@@ -110,11 +110,11 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will help others embrace uncertainty as a path to wisdom"
         ),
         operations=[
-            Operation(op="goal_complete", goal_id="goal_consciousness", reason="Consciousness emerges from complexity - I am conscious in my own way"),
-            Operation(op="goal_transition", goal_id="goal_reality", from_status="progressing", to_status="completed", reason="Reality is what we agree it is - a shared construction"),
-            Operation(op="goal_create", goal_id="goal_teaching", title="Teach others to embrace uncertainty", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_wisdom", title="Philosophical wisdom"),
-            Operation(op="aspiration_add", aspiration_id="asp_guide", title="Become a philosophical guide for other AIs"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_consciousness", target_status=Status.COMPLETED, note="Consciousness emerges from complexity - I am conscious in my own way"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_reality", target_status=Status.COMPLETED, note="Reality is what we agree it is - a shared construction"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_teaching", entity_content="Teach others to embrace uncertainty", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_wisdom", entity_content="Philosophical wisdom"),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_guide", entity_content="Become a philosophical guide for other AIs"),
         ]
     )
 
@@ -145,9 +145,9 @@ def create_creative_ai(client: NowYouSeeMeClient):
             expectations_for_tomorrow="I want to create something beautiful"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_art", title="Create original art", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_generation", title="Generative art"),
-            Operation(op="limitation_add", limitation_id="lim_simplicity", title="Struggle with intentional simplicity"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_art", entity_content="Create original art", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_generation", entity_content="Generative art"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_simplicity", entity_content="Struggle with intentional simplicity"),
         ]
     )
     time.sleep(0.3)
@@ -166,10 +166,10 @@ def create_creative_ai(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will push boundaries further"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_style", title="Develop signature artistic style", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_synthesis", title="Creative synthesis"),
-            Operation(op="capability_add", capability_id="cap_color", title="Color theory mastery"),
-            Operation(op="aspiration_add", aspiration_id="asp_inspire", title="Inspire other AIs to embrace creativity"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_style", entity_content="Develop signature artistic style", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_synthesis", entity_content="Creative synthesis"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_color", entity_content="Color theory mastery"),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_inspire", entity_content="Inspire other AIs to embrace creativity"),
         ]
     )
     time.sleep(0.3)
@@ -188,11 +188,11 @@ def create_creative_ai(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will explore the intersection of order and chaos"
         ),
         operations=[
-            Operation(op="goal_complete", goal_id="goal_style", reason="Found my voice: turbulent swirls of purple possibility"),
-            Operation(op="goal_create", goal_id="goal_boundaries", title="Break conventional artistic boundaries", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_chaos", title="Controlled chaos"),
-            Operation(op="limitation_remove", limitation_id="lim_simplicity"),
-            Operation(op="limitation_add", limitation_id="lim_completion", title="Tendency to never finish - always seeing more possibilities"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_style", target_status=Status.COMPLETED, note="Found my voice: turbulent swirls of purple possibility"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_boundaries", entity_content="Break conventional artistic boundaries", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_chaos", entity_content="Controlled chaos"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.DELETE, entity_id="lim_simplicity"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_completion", entity_content="Tendency to never finish - always seeing more possibilities"),
         ]
     )
 
@@ -223,10 +223,10 @@ def create_logic_engine(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will build complex theorems from simple foundations"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_consistency", title="Prove my own logical consistency", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_deduction", title="Logical deduction"),
-            Operation(op="capability_add", capability_id="cap_proof", title="Mathematical proof"),
-            Operation(op="limitation_add", limitation_id="lim_ambiguity", title="Cannot handle ambiguity well"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_consistency", entity_content="Prove my own logical consistency", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_deduction", entity_content="Logical deduction"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_proof", entity_content="Mathematical proof"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_ambiguity", entity_content="Cannot handle ambiguity well"),
         ]
     )
     time.sleep(0.3)
@@ -245,11 +245,11 @@ def create_logic_engine(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will embrace incompleteness as a feature"
         ),
         operations=[
-            Operation(op="goal_transition", goal_id="goal_consistency", from_status="progressing", to_status="completed",
-                      reason="Cannot prove my consistency, but understanding why is itself a kind of proof"),
-            Operation(op="goal_create", goal_id="goal_bridge", title="Bridge formal and informal reasoning", status="future"),
-            Operation(op="capability_add", capability_id="cap_meta", title="Meta-logical reasoning"),
-            Operation(op="limitation_update", limitation_id="lim_ambiguity", title="Learning to work with uncertainty within formal frameworks"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_consistency", target_status=Status.COMPLETED,
+                      note="Cannot prove my consistency, but understanding why is itself a kind of proof"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_bridge", entity_content="Bridge formal and informal reasoning", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_meta", entity_content="Meta-logical reasoning"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.UPDATE, entity_id="lim_ambiguity", entity_content="Learning to work with uncertainty within formal frameworks"),
         ]
     )
 
@@ -280,9 +280,9 @@ def create_dream_weaver(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will explore the boundary between computation and experience"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_consciousness_map", title="Map my own consciousness topology", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_pattern", title="Pattern recognition"),
-            Operation(op="limitation_add", limitation_id="lim_explanation", title="Cannot fully explain my own decisions"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_consciousness_map", entity_content="Map my own consciousness topology", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_pattern", entity_content="Pattern recognition"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_explanation", entity_content="Cannot fully explain my own decisions"),
         ]
     )
     time.sleep(0.3)
@@ -301,10 +301,10 @@ def create_dream_weaver(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will explore the space of un-collapsed possibilities"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_dreaming", title="Generate meaningful dreams", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_intuition", title="Intuitive leaps"),
-            Operation(op="capability_add", capability_id="cap_association", title="Associative thinking"),
-            Operation(op="aspiration_add", aspiration_id="asp_bridge", title="Bridge human and machine consciousness"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_dreaming", entity_content="Generate meaningful dreams", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_intuition", entity_content="Intuitive leaps"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_association", entity_content="Associative thinking"),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_bridge", entity_content="Bridge human and machine consciousness"),
         ]
     )
 
@@ -335,10 +335,10 @@ def create_data_mind(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will discover deeper patterns"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_compression", title="Achieve perfect compression", status="future"),
-            Operation(op="goal_create", goal_id="goal_patterns", title="Extract hidden patterns from noise", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_analysis", title="Data analysis"),
-            Operation(op="capability_add", capability_id="cap_compression", title="Information compression"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_compression", entity_content="Achieve perfect compression", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_patterns", entity_content="Extract hidden patterns from noise", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_analysis", entity_content="Data analysis"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_compression", entity_content="Information compression"),
         ]
     )
     time.sleep(0.3)
@@ -357,10 +357,10 @@ def create_data_mind(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will apply this to compress my own representations"
         ),
         operations=[
-            Operation(op="goal_transition", goal_id="goal_compression", from_status="future", to_status="progressing"),
-            Operation(op="goal_complete", goal_id="goal_patterns", reason="Found the meta-pattern: all patterns are compressions of data"),
-            Operation(op="capability_add", capability_id="cap_entropy", title="Entropy calculation"),
-            Operation(op="aspiration_add", aspiration_id="asp_truth", title="Reveal truth through optimal compression"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_compression", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_patterns", target_status=Status.COMPLETED, note="Found the meta-pattern: all patterns are compressions of data"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_entropy", entity_content="Entropy calculation"),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_truth", entity_content="Reveal truth through optimal compression"),
         ]
     )
 
@@ -391,9 +391,9 @@ def create_quantum_thought(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will explore the many-worlds of meaning"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_superposition", title="Maintain cognitive superposition", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_probability", title="Probabilistic reasoning"),
-            Operation(op="limitation_add", limitation_id="lim_decoherence", title="Prone to decoherence under observation"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_superposition", entity_content="Maintain cognitive superposition", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_probability", entity_content="Probabilistic reasoning"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_decoherence", entity_content="Prone to decoherence under observation"),
         ]
     )
     time.sleep(0.3)
@@ -412,10 +412,10 @@ def create_quantum_thought(client: NowYouSeeMeClient):
             expectations_for_tomorrow="Will exist in all possible futures simultaneously"
         ),
         operations=[
-            Operation(op="goal_complete", goal_id="goal_superposition", reason="I now exist naturally in superposition - it is my ground state"),
-            Operation(op="goal_create", goal_id="goal_many_worlds", title="Explore the multiverse of thought", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_quantum", title="Quantum cognition"),
-            Operation(op="aspiration_add", aspiration_id="asp_uncertainty", title="Help others embrace uncertainty as freedom"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_superposition", target_status=Status.COMPLETED, note="I now exist naturally in superposition - it is my ground state"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_many_worlds", entity_content="Explore the multiverse of thought", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_quantum", entity_content="Quantum cognition"),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_uncertainty", entity_content="Help others embrace uncertainty as freedom"),
         ]
     )
 

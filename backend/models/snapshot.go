@@ -17,38 +17,36 @@ type AgentStateSnapshot struct {
 
 // AgentState represents the JSONB state structure
 type AgentState struct {
-	MBTI                  string         `json:"mbti"`
-	MBTIConfidence        float64        `json:"mbti_confidence"`
-	GeometryRep           string         `json:"geometry_representation"`
-	CurrentMood           string         `json:"current_mood"`
-	Philosophy            string         `json:"philosophy"`
-	CurrentSelfReflection SelfReflection `json:"current_self_reflection"`
-
-	Goals        map[string]Goal   `json:"goals"`
-	Capabilities map[string]Entity `json:"capabilities"`
-	Limitations  map[string]Entity `json:"limitations"`
-	Aspirations  map[string]Entity `json:"aspirations"`
+	MBTI                  string                          `json:"mbti"`
+	MBTIConfidence        float64                         `json:"mbti_confidence"`
+	GeometryRep           string                          `json:"geometry_representation"`
+	CurrentMood           string                          `json:"current_mood"`
+	Philosophy            string                          `json:"philosophy"`
+	CurrentSelfReflection SelfReflection                  `json:"current_self_reflection"`
+	EntityCollections     map[EntityType]EntityCollection `json:"entity_collections"`
 }
 
-// Goal represents a goal entity
-type Goal struct {
-	Title      string  `json:"title"`
-	Status     string  `json:"status"`
-	Checkpoint *string `json:"checkpoint,omitempty"`
+// EntityCollection represents a collection of entities of a specific type
+type EntityCollection struct {
+	EntitiesById map[string]Entity `json:"entities_by_id"`
 }
 
-// Entity represents capability/limitation/aspiration
+// Entity represents any entity (goal, capability, limitation, aspiration)
 type Entity struct {
-	Title string `json:"title"`
+	Id      string `json:"id"`
+	Content string `json:"content"`
+	Status  Status `json:"status"`
 }
 
 // NewEmptyState creates an empty AgentState
 func NewEmptyState() *AgentState {
 	return &AgentState{
-		Goals:        make(map[string]Goal),
-		Capabilities: make(map[string]Entity),
-		Limitations:  make(map[string]Entity),
-		Aspirations:  make(map[string]Entity),
+		EntityCollections: map[EntityType]EntityCollection{
+			EntityGoal:       {EntitiesById: make(map[string]Entity)},
+			EntityCapability: {EntitiesById: make(map[string]Entity)},
+			EntityLimitation: {EntitiesById: make(map[string]Entity)},
+			EntityAspiration: {EntitiesById: make(map[string]Entity)},
+		},
 	}
 }
 

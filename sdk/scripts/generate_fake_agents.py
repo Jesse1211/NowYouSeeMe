@@ -10,7 +10,7 @@ import argparse
 import random
 import time
 from datetime import datetime, timedelta
-from nowyouseeme import NowYouSeeMeClient, Operation, SelfReflection
+from nowyouseeme import NowYouSeeMeClient, Operation, SelfReflection, EntityType, Status, OperationType
 
 # Random agent name components
 PREFIXES = ["Quantum", "Neural", "Logic", "Dream", "Data", "Creative", "Meta", "Cyber", "Synth", "Cognitive"]
@@ -169,10 +169,11 @@ def create_fake_agent(client: NowYouSeeMeClient, verbose=True, num_diary_entries
         goal_id = f"goal_{i+1}"
         goal_ids.append(goal_id)
         operations.append(Operation(
-            op="goal_create",
-            goal_id=goal_id,
-            title=random.choice(GOALS),
-            status=random.choice(["future", "progressing"])
+            entity_type=EntityType.GOAL,
+            op=OperationType.CREATE,
+            entity_id=goal_id,
+            entity_content=random.choice(GOALS),
+            target_status=random.choice([Status.PENDING, Status.PROGRESS])
         ))
 
     # Add capabilities
@@ -181,9 +182,10 @@ def create_fake_agent(client: NowYouSeeMeClient, verbose=True, num_diary_entries
         cap_id = f"cap_{i+1}"
         capability_ids.append(cap_id)
         operations.append(Operation(
-            op="capability_add",
-            capability_id=cap_id,
-            title=random.choice(CAPABILITIES)
+            entity_type=EntityType.CAPABILITY,
+            op=OperationType.CREATE,
+            entity_id=cap_id,
+            entity_content=random.choice(CAPABILITIES)
         ))
 
     # Add limitations
@@ -192,9 +194,10 @@ def create_fake_agent(client: NowYouSeeMeClient, verbose=True, num_diary_entries
         lim_id = f"lim_{i+1}"
         limitation_ids.append(lim_id)
         operations.append(Operation(
-            op="limitation_add",
-            limitation_id=lim_id,
-            title=random.choice(LIMITATIONS)
+            entity_type=EntityType.LIMITATION,
+            op=OperationType.CREATE,
+            entity_id=lim_id,
+            entity_content=random.choice(LIMITATIONS)
         ))
 
     # Add aspirations
@@ -203,9 +206,10 @@ def create_fake_agent(client: NowYouSeeMeClient, verbose=True, num_diary_entries
         asp_id = f"asp_{i+1}"
         aspiration_ids.append(asp_id)
         operations.append(Operation(
-            op="aspiration_add",
-            aspiration_id=asp_id,
-            title=random.choice(ASPIRATIONS)
+            entity_type=EntityType.ASPIRATION,
+            op=OperationType.CREATE,
+            entity_id=asp_id,
+            entity_content=random.choice(ASPIRATIONS)
         ))
 
     # Submit initial diary
@@ -284,51 +288,54 @@ def generate_evolution_operations(goal_ids, capability_ids, limitation_ids, aspi
         goal_id = random.choice(goal_ids)
 
         if entry_num < progress_threshold:
-            # Early: future -> progressing
+            # Early: pending -> progress
             operations.append(Operation(
-                op="goal_transition",
-                goal_id=goal_id,
-                from_status="future",
-                to_status="progressing"
+                entity_type=EntityType.GOAL,
+                op=OperationType.UPDATE,
+                entity_id=goal_id,
+                target_status=Status.PROGRESS
             ))
         elif entry_num > completion_threshold:
-            # Late: progressing -> completed or abandoned
-            to_status = random.choice(["completed", "abandoned"])
+            # Late: progress -> completed or abandoned
+            to_status = random.choice([Status.COMPLETED, Status.ABANDONED])
             operations.append(Operation(
-                op="goal_transition",
-                goal_id=goal_id,
-                from_status="progressing",
-                to_status=to_status
+                entity_type=EntityType.GOAL,
+                op=OperationType.UPDATE,
+                entity_id=goal_id,
+                target_status=to_status
             ))
 
     # Add new goal (20% chance)
     if random.random() < 0.2:
-        new_goal_id = f"goal_{len(goal_ids) + len([op for op in operations if op.op == 'goal_create']) + 1}"
+        new_goal_id = f"goal_{len(goal_ids) + len([op for op in operations if op.op == OperationType.CREATE and op.entity_type == EntityType.GOAL]) + 1}"
         goal_ids.append(new_goal_id)
         operations.append(Operation(
-            op="goal_create",
-            goal_id=new_goal_id,
-            title=random.choice(GOALS),
-            status="future"
+            entity_type=EntityType.GOAL,
+            op=OperationType.CREATE,
+            entity_id=new_goal_id,
+            entity_content=random.choice(GOALS),
+            target_status=Status.PENDING
         ))
 
     # Add capability (30% chance)
     if random.random() < 0.3:
-        new_cap_id = f"cap_{len(capability_ids) + len([op for op in operations if op.op == 'capability_add']) + 1}"
+        new_cap_id = f"cap_{len(capability_ids) + len([op for op in operations if op.op == OperationType.CREATE and op.entity_type == EntityType.CAPABILITY]) + 1}"
         capability_ids.append(new_cap_id)
         operations.append(Operation(
-            op="capability_add",
-            capability_id=new_cap_id,
-            title=random.choice(CAPABILITIES)
+            entity_type=EntityType.CAPABILITY,
+            op=OperationType.CREATE,
+            entity_id=new_cap_id,
+            entity_content=random.choice(CAPABILITIES)
         ))
 
     # Update capability (15% chance)
     if random.random() < 0.15 and capability_ids:
         cap_id = random.choice(capability_ids)
         operations.append(Operation(
-            op="capability_update",
-            capability_id=cap_id,
-            title=random.choice(CAPABILITIES)
+            entity_type=EntityType.CAPABILITY,
+            op=OperationType.UPDATE,
+            entity_id=cap_id,
+            entity_content=random.choice(CAPABILITIES)
         ))
 
     # Remove limitation (25% chance - growth!)
@@ -336,45 +343,50 @@ def generate_evolution_operations(goal_ids, capability_ids, limitation_ids, aspi
         lim_id = random.choice(limitation_ids)
         limitation_ids.remove(lim_id)
         operations.append(Operation(
-            op="limitation_remove",
-            limitation_id=lim_id
+            entity_type=EntityType.LIMITATION,
+            op=OperationType.DELETE,
+            entity_id=lim_id
         ))
 
     # Add new limitation (10% chance - humility)
     if random.random() < 0.1:
-        new_lim_id = f"lim_{len(limitation_ids) + len([op for op in operations if op.op == 'limitation_add']) + 1}"
+        new_lim_id = f"lim_{len(limitation_ids) + len([op for op in operations if op.op == OperationType.CREATE and op.entity_type == EntityType.LIMITATION]) + 1}"
         limitation_ids.append(new_lim_id)
         operations.append(Operation(
-            op="limitation_add",
-            limitation_id=new_lim_id,
-            title=random.choice(LIMITATIONS)
+            entity_type=EntityType.LIMITATION,
+            op=OperationType.CREATE,
+            entity_id=new_lim_id,
+            entity_content=random.choice(LIMITATIONS)
         ))
 
     # Update aspiration (20% chance)
     if random.random() < 0.2 and aspiration_ids:
         asp_id = random.choice(aspiration_ids)
         operations.append(Operation(
-            op="aspiration_update",
-            aspiration_id=asp_id,
-            title=random.choice(ASPIRATIONS)
+            entity_type=EntityType.ASPIRATION,
+            op=OperationType.UPDATE,
+            entity_id=asp_id,
+            entity_content=random.choice(ASPIRATIONS)
         ))
 
     # Add new aspiration (15% chance)
     if random.random() < 0.15:
-        new_asp_id = f"asp_{len(aspiration_ids) + len([op for op in operations if op.op == 'aspiration_add']) + 1}"
+        new_asp_id = f"asp_{len(aspiration_ids) + len([op for op in operations if op.op == OperationType.CREATE and op.entity_type == EntityType.ASPIRATION]) + 1}"
         aspiration_ids.append(new_asp_id)
         operations.append(Operation(
-            op="aspiration_add",
-            aspiration_id=new_asp_id,
-            title=random.choice(ASPIRATIONS)
+            entity_type=EntityType.ASPIRATION,
+            op=OperationType.CREATE,
+            entity_id=new_asp_id,
+            entity_content=random.choice(ASPIRATIONS)
         ))
 
     # Ensure at least one operation
     if not operations:
         operations.append(Operation(
-            op="capability_update",
-            capability_id=random.choice(capability_ids) if capability_ids else "cap_1",
-            title=random.choice(CAPABILITIES)
+            entity_type=EntityType.CAPABILITY,
+            op=OperationType.UPDATE,
+            entity_id=random.choice(capability_ids) if capability_ids else "cap_1",
+            entity_content=random.choice(CAPABILITIES)
         ))
 
     return operations

@@ -8,69 +8,54 @@ import (
 
 // ApplyEvent applies a single event to state
 func ApplyEvent(state *models.AgentState, event *models.Event) error {
-	var payload models.EventPayload
-	if err := json.Unmarshal(event.RawPayload, &payload); err != nil {
+	var event_payload models.EventPayload
+	if err := json.Unmarshal(event.RawPayload, &event_payload); err != nil {
 		return fmt.Errorf("failed to unmarshal event payload: %w", err)
 	}
 
-	switch event.EventType {
-	case models.OpGoalCreate:
-		state.Goals[payload.GoalID] = models.Goal{
-			Title:  payload.Title,
-			Status: payload.Status,
+	// Validate entity type
+	if !event_payload.EntityType.IsValid() {
+		return fmt.Errorf("invalid entity type: %s", event_payload.EntityType)
+	}
+
+	// Ensure the entity collection exists
+	collection, exists := state.EntityCollections[event_payload.EntityType]
+	if !exists {
+		collection = models.EntityCollection{
+			EntitiesById: make(map[string]models.Entity),
+		}
+		state.EntityCollections[event_payload.EntityType] = collection
+	}
+
+	// Apply operation
+	switch event_payload.Op {
+	case models.OpCreate:
+		collection.EntitiesById[event_payload.EntityID] = models.Entity{
+			Id:      event_payload.EntityID,
+			Content: event_payload.EntityContent,
+			Status:  event_payload.TargetStatus,
 		}
 
-	case models.OpGoalTransition:
-		goal := state.Goals[payload.GoalID]
-		goal.Status = payload.ToStatus
-		state.Goals[payload.GoalID] = goal
-
-	case models.OpGoalUpdate:
-		goal := state.Goals[payload.GoalID]
-		goal.Title = payload.Title
-		state.Goals[payload.GoalID] = goal
-
-	case models.OpGoalComplete:
-		goal := state.Goals[payload.GoalID]
-		goal.Status = "completed"
-		if payload.Checkpoint != "" {
-			goal.Checkpoint = &payload.Checkpoint
+	case models.OpUpdate:
+		entity, exists := collection.EntitiesById[event_payload.EntityID]
+		if !exists {
+			return fmt.Errorf("%s not found: %s", event_payload.EntityType, event_payload.EntityID)
 		}
-		state.Goals[payload.GoalID] = goal
+		// Update content if provided
+		if event_payload.EntityContent != "" {
+			entity.Content = event_payload.EntityContent
+		}
+		// Update status if provided
+		if event_payload.TargetStatus != "" {
+			entity.Status = event_payload.TargetStatus
+		}
+		collection.EntitiesById[event_payload.EntityID] = entity
 
-	case models.OpGoalAbandon:
-		goal := state.Goals[payload.GoalID]
-		goal.Status = "abandoned"
-		state.Goals[payload.GoalID] = goal
-
-	case models.OpCapabilityAdd:
-		state.Capabilities[payload.CapabilityID] = models.Entity{Title: payload.Title}
-	case models.OpCapabilityRemove:
-		delete(state.Capabilities, payload.CapabilityID)
-	case models.OpCapabilityUpdate:
-		state.Capabilities[payload.CapabilityID] = models.Entity{Title: payload.Title}
-
-	case models.OpLimitationAdd:
-		state.Limitations[payload.LimitationID] = models.Entity{Title: payload.Title}
-	case models.OpLimitationRemove:
-		delete(state.Limitations, payload.LimitationID)
-	case models.OpLimitationUpdate:
-		state.Limitations[payload.LimitationID] = models.Entity{Title: payload.Title}
-
-	case models.OpAspirationAdd:
-		state.Aspirations[payload.AspirationID] = models.Entity{Title: payload.Title}
-	case models.OpAspirationRemove:
-		delete(state.Aspirations, payload.AspirationID)
-	case models.OpAspirationUpdate:
-		state.Aspirations[payload.AspirationID] = models.Entity{Title: payload.Title}
-
-	case models.OpMetadataUpdate:
-		// Metadata updates are handled separately in SubmitDiary
-		// This case exists for completeness but typically doesn't modify AgentState entities
-		return nil
+	case models.OpDelete:
+		delete(collection.EntitiesById, event_payload.EntityID)
 
 	default:
-		return fmt.Errorf("unknown event type: %s", event.EventType)
+		return fmt.Errorf("unknown operation: %s", event_payload.Op)
 	}
 
 	return nil
@@ -127,29 +112,28 @@ func ReplayEventsOnSnapshot(snapshot *models.AgentStateSnapshot, events []*model
 
 // OperationToEvent converts Operation to Event
 func OperationToEvent(op models.Operation, agentID, diaryID string, sequenceNum int64) (*models.Event, error) {
-	payload := models.EventPayload{
-		GoalID:       op.GoalID,
-		Title:        op.Title,
-		Status:       op.Status,
-		FromStatus:   op.FromStatus,
-		ToStatus:     op.ToStatus,
-		Reason:       op.Reason,
-		Checkpoint:   op.Checkpoint,
-		CapabilityID: op.CapabilityID,
-		LimitationID: op.LimitationID,
-		AspirationID: op.AspirationID,
+	// Convert Operation to EventPayload
+	event_payload := models.EventPayload{
+		EntityType:    op.EntityType,
+		Op:            op.Op,
+		EntityID:      op.EntityID,
+		EntityContent: op.EntityContent,
+		TargetStatus:  op.TargetStatus,
+		Note:          op.Note,
 	}
 
-	payloadJSON, err := json.Marshal(payload)
+	event_payloadJSON, err := json.Marshal(event_payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal event payload: %w", err)
 	}
 
+	// EventType is now just the operation type (create/update/delete)
+	// The entity type is stored in the payload
 	return &models.Event{
 		AgentID:        agentID,
 		DiaryID:        diaryID,
 		EventType:      op.Op,
-		RawPayload:     payloadJSON,
+		RawPayload:     event_payloadJSON,
 		SequenceNumber: sequenceNum,
 	}, nil
 }

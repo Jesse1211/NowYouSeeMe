@@ -1,33 +1,12 @@
 /**
- * Operation types - these are the ONLY valid operation types
+ * Operation types - simplified CRUD operations
  * Must match backend models/operation_types.go
  */
 
 export const OperationType = {
-  // Goal operations
-  GoalCreate: "goal_create",
-  GoalTransition: "goal_transition",
-  GoalUpdate: "goal_update",
-  GoalComplete: "goal_complete",
-  GoalAbandon: "goal_abandon",
-
-  // Capability operations
-  CapabilityAdd: "capability_add",
-  CapabilityRemove: "capability_remove",
-  CapabilityUpdate: "capability_update",
-
-  // Limitation operations
-  LimitationAdd: "limitation_add",
-  LimitationRemove: "limitation_remove",
-  LimitationUpdate: "limitation_update",
-
-  // Aspiration operations
-  AspirationAdd: "aspiration_add",
-  AspirationRemove: "aspiration_remove",
-  AspirationUpdate: "aspiration_update",
-
-  // Metadata operations
-  MetadataUpdate: "metadata_update",
+  Create: "create",
+  Update: "update",
+  Delete: "delete",
 } as const
 
 export type OperationType = typeof OperationType[keyof typeof OperationType]

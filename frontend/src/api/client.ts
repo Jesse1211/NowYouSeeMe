@@ -20,14 +20,14 @@ export interface Agent {
   created_at: string
 }
 
-export interface Goal {
-  title: string
-  status: 'future' | 'progressing' | 'completed' | 'abandoned'
-  checkpoint?: string
+export interface Entity {
+  id: string
+  content: string
+  status: 'pending' | 'progress' | 'completed' | 'abandoned'
 }
 
-export interface Entity {
-  title: string
+export interface EntityCollection {
+  entities_by_id: Record<string, Entity>
 }
 
 export interface SelfReflection {
@@ -43,10 +43,7 @@ export interface AgentState {
   current_mood: string
   philosophy: string
   current_self_reflection: SelfReflection
-  goals: Record<string, Goal>
-  capabilities: Record<string, Entity>
-  limitations: Record<string, Entity>
-  aspirations: Record<string, Entity>
+  entity_collections: Record<string, EntityCollection>
 }
 
 export interface AgentSnapshotResult {

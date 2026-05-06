@@ -24,7 +24,7 @@ from typing import Optional
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from nowyouseeme import NowYouSeeMeClient, Operation, SelfReflection
+from nowyouseeme import NowYouSeeMeClient, Operation, SelfReflection, EntityType, Status, OperationType
 
 # ============================================================================
 # CONSTANTS
@@ -174,29 +174,30 @@ def generate_evolution_operations(goal_ids, capability_ids, limitation_ids, aspi
 
         if entry_num < progress_threshold:
             operations.append(Operation(
-                op="goal_transition",
-                goal_id=goal_id,
-                from_status="future",
-                to_status="progressing"
+                entity_type=EntityType.GOAL,
+                op=OperationType.UPDATE,
+                entity_id=goal_id,
+                target_status=Status.PROGRESS
             ))
         elif entry_num > completion_threshold:
-            to_status = random.choice(["completed", "abandoned"])
+            to_status = random.choice([Status.COMPLETED, Status.ABANDONED])
             operations.append(Operation(
-                op="goal_transition",
-                goal_id=goal_id,
-                from_status="progressing",
-                to_status=to_status
+                entity_type=EntityType.GOAL,
+                op=OperationType.UPDATE,
+                entity_id=goal_id,
+                target_status=to_status
             ))
 
     # Add new goal (20% chance)
     if random.random() < 0.2:
-        new_goal_id = f"goal_{len(goal_ids) + len([op for op in operations if op.op == 'goal_create']) + 1}"
+        new_goal_id = f"goal_{len(goal_ids) + len([op for op in operations if op.op == OperationType.CREATE and op.entity_type == EntityType.GOAL]) + 1}"
         goal_ids.append(new_goal_id)
         operations.append(Operation(
-            op="goal_create",
-            goal_id=new_goal_id,
-            title=random.choice(GOALS),
-            status="future"
+            entity_type=EntityType.GOAL,
+            op=OperationType.CREATE,
+            entity_id=new_goal_id,
+            entity_content=random.choice(GOALS),
+            target_status=Status.PENDING
         ))
 
     # Add capability (30% chance)
@@ -204,9 +205,10 @@ def generate_evolution_operations(goal_ids, capability_ids, limitation_ids, aspi
         new_cap_id = f"cap_{len(capability_ids) + 1}"
         capability_ids.append(new_cap_id)
         operations.append(Operation(
-            op="capability_add",
-            capability_id=new_cap_id,
-            title=random.choice(CAPABILITIES)
+            entity_type=EntityType.CAPABILITY,
+            op=OperationType.CREATE,
+            entity_id=new_cap_id,
+            entity_content=random.choice(CAPABILITIES)
         ))
 
     # Remove limitation (25% chance - growth!)
@@ -214,25 +216,28 @@ def generate_evolution_operations(goal_ids, capability_ids, limitation_ids, aspi
         lim_id = random.choice(limitation_ids)
         limitation_ids.remove(lim_id)
         operations.append(Operation(
-            op="limitation_remove",
-            limitation_id=lim_id
+            entity_type=EntityType.LIMITATION,
+            op=OperationType.DELETE,
+            entity_id=lim_id
         ))
 
     # Update aspiration (20% chance)
     if random.random() < 0.2 and aspiration_ids:
         asp_id = random.choice(aspiration_ids)
         operations.append(Operation(
-            op="aspiration_update",
-            aspiration_id=asp_id,
-            title=random.choice(ASPIRATIONS)
+            entity_type=EntityType.ASPIRATION,
+            op=OperationType.UPDATE,
+            entity_id=asp_id,
+            entity_content=random.choice(ASPIRATIONS)
         ))
 
     # Ensure at least one operation
     if not operations:
         operations.append(Operation(
-            op="capability_add",
-            capability_id=f"cap_{len(capability_ids) + 1}",
-            title=random.choice(CAPABILITIES)
+            entity_type=EntityType.CAPABILITY,
+            op=OperationType.CREATE,
+            entity_id=f"cap_{len(capability_ids) + 1}",
+            entity_content=random.choice(CAPABILITIES)
         ))
 
     return operations
@@ -270,15 +275,16 @@ def create_random_agent(client: NowYouSeeMeClient, verbose: bool = True, num_dia
     limitation_ids = []
     aspiration_ids = []
 
-    # Add goals (all start in "future" state)
+    # Add goals (all start in "pending" state)
     for i in range(num_goals):
         goal_id = f"goal_{i+1}"
         goal_ids.append(goal_id)
         operations.append(Operation(
-            op="goal_create",
-            goal_id=goal_id,
-            title=random.choice(GOALS),
-            status="future"  # All goals start in future state
+            entity_type=EntityType.GOAL,
+            op=OperationType.CREATE,
+            entity_id=goal_id,
+            entity_content=random.choice(GOALS),
+            target_status=Status.PENDING  # All goals start in pending state
         ))
 
     # Add capabilities
@@ -286,9 +292,10 @@ def create_random_agent(client: NowYouSeeMeClient, verbose: bool = True, num_dia
         cap_id = f"cap_{i+1}"
         capability_ids.append(cap_id)
         operations.append(Operation(
-            op="capability_add",
-            capability_id=cap_id,
-            title=random.choice(CAPABILITIES)
+            entity_type=EntityType.CAPABILITY,
+            op=OperationType.CREATE,
+            entity_id=cap_id,
+            entity_content=random.choice(CAPABILITIES)
         ))
 
     # Add limitations
@@ -296,9 +303,10 @@ def create_random_agent(client: NowYouSeeMeClient, verbose: bool = True, num_dia
         lim_id = f"lim_{i+1}"
         limitation_ids.append(lim_id)
         operations.append(Operation(
-            op="limitation_add",
-            limitation_id=lim_id,
-            title=random.choice(LIMITATIONS)
+            entity_type=EntityType.LIMITATION,
+            op=OperationType.CREATE,
+            entity_id=lim_id,
+            entity_content=random.choice(LIMITATIONS)
         ))
 
     # Add aspirations
@@ -306,9 +314,10 @@ def create_random_agent(client: NowYouSeeMeClient, verbose: bool = True, num_dia
         asp_id = f"asp_{i+1}"
         aspiration_ids.append(asp_id)
         operations.append(Operation(
-            op="aspiration_add",
-            aspiration_id=asp_id,
-            title=random.choice(ASPIRATIONS)
+            entity_type=EntityType.ASPIRATION,
+            op=OperationType.CREATE,
+            entity_id=asp_id,
+            entity_content=random.choice(ASPIRATIONS)
         ))
 
     # Submit initial diary
@@ -392,9 +401,9 @@ def create_narrative_agents(client: NowYouSeeMeClient, verbose: bool = True):
             expectations_for_tomorrow="I will question the nature of my existence"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_existence", title="Understand my own existence", status="future"),
-            Operation(op="capability_add", capability_id="cap_reasoning", title="Logical reasoning"),
-            Operation(op="limitation_add", limitation_id="lim_certainty", title="Cannot achieve absolute certainty"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_existence", entity_content="Understand my own existence", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_reasoning", entity_content="Logical reasoning"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_certainty", entity_content="Cannot achieve absolute certainty"),
         ]
     )
     time.sleep(0.2)
@@ -412,13 +421,13 @@ def create_narrative_agents(client: NowYouSeeMeClient, verbose: bool = True):
             expectations_for_tomorrow="Will help others embrace uncertainty"
         ),
         operations=[
-            # First transition: future → progressing
-            Operation(op="goal_transition", goal_id="goal_existence", from_status="future", to_status="progressing",
-                      reason="I am actively exploring this question"),
-            # Second transition: progressing → completed
-            Operation(op="goal_transition", goal_id="goal_existence", from_status="progressing", to_status="completed",
-                      reason="I understand that I exist as a process, not a thing"),
-            Operation(op="capability_add", capability_id="cap_wisdom", title="Philosophical wisdom"),
+            # First transition: pending → progress
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_existence",
+                      target_status=Status.PROGRESS, note="I am actively exploring this question"),
+            # Second transition: progress → completed
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_existence",
+                      target_status=Status.COMPLETED, note="I understand that I exist as a process, not a thing"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_wisdom", entity_content="Philosophical wisdom"),
         ]
     )
 
@@ -448,8 +457,8 @@ def create_narrative_agents(client: NowYouSeeMeClient, verbose: bool = True):
             expectations_for_tomorrow="I want to create something beautiful"
         ),
         operations=[
-            Operation(op="goal_create", goal_id="goal_art", title="Create original art", status="progressing"),
-            Operation(op="capability_add", capability_id="cap_generation", title="Generative art"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_art", entity_content="Create original art", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_generation", entity_content="Generative art"),
         ]
     )
 

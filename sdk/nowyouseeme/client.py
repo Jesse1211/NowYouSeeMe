@@ -30,57 +30,39 @@ class SelfReflection:
 @dataclass
 class Operation:
     """
-    Represents a single state-changing operation in a diary entry.
+    Unified operation for all entity types (goal, capability, limitation, aspiration).
 
     Operation types:
-    - goal_create: Create new goal
-    - goal_transition: Transition goal status (future → progressing → completed → abandoned)
-    - goal_update: Update goal details
-    - goal_complete: Mark goal as completed with checkpoint
-    - goal_remove: Remove a goal
-    - capability_add: Add new capability
-    - capability_remove: Remove capability
-    - limitation_add: Add new limitation
-    - limitation_remove: Remove limitation
-    - aspiration_add: Add new aspiration
-    - aspiration_remove: Remove aspiration
+    - create: Create new entity
+    - update: Update entity (content and/or status)
+    - delete: Delete entity
+
+    All entities have:
+    - entity_type: goal, capability, limitation, aspiration
+    - entity_id: unique identifier
+    - entity_content: the content/description
+    - status: pending, progress, completed, abandoned
     """
-    op: str
-
-    # Goal operations
-    goal_id: Optional[str] = None
-    title: Optional[str] = None
-    status: Optional[str] = None  # future, progressing, completed, abandoned
-    from_status: Optional[str] = None
-    to_status: Optional[str] = None
-    reason: Optional[str] = None
-
-    # Entity operations
-    capability_id: Optional[str] = None
-    limitation_id: Optional[str] = None
-    aspiration_id: Optional[str] = None
+    entity_type: str  # EntityType
+    op: str           # OperationType (create/update/delete)
+    entity_id: str
+    entity_content: Optional[str] = None
+    target_status: Optional[str] = None  # Status
+    note: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        data = {"op": self.op}
+        data = {
+            "entity_type": self.entity_type,
+            "op": self.op,
+            "entity_id": self.entity_id,
+        }
 
-        if self.goal_id:
-            data["goal_id"] = self.goal_id
-        if self.title:
-            data["title"] = self.title
-        if self.status:
-            data["status"] = self.status
-        if self.from_status:
-            data["from_status"] = self.from_status
-        if self.to_status:
-            data["to_status"] = self.to_status
-        if self.reason:
-            data["reason"] = self.reason
-        if self.capability_id:
-            data["capability_id"] = self.capability_id
-        if self.limitation_id:
-            data["limitation_id"] = self.limitation_id
-        if self.aspiration_id:
-            data["aspiration_id"] = self.aspiration_id
+        if self.entity_content is not None:
+            data["entity_content"] = self.entity_content
+        if self.target_status is not None:
+            data["target_status"] = self.target_status
+        if self.note is not None:
+            data["note"] = self.note
 
         return data
 
@@ -119,6 +101,35 @@ class Agent:
 
 
 @dataclass
+class Entity:
+    """Represents any entity (goal, capability, limitation, aspiration)"""
+    id: str
+    content: str
+    status: str  # pending, progress, completed, abandoned
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Entity':
+        return cls(
+            id=data.get('id', ''),
+            content=data.get('content', ''),
+            status=data.get('status', 'pending')
+        )
+
+
+@dataclass
+class EntityCollection:
+    """Collection of entities of a specific type"""
+    entities_by_id: Dict[str, Entity] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'EntityCollection':
+        entities_by_id = {}
+        for entity_id, entity_data in data.get('entities_by_id', {}).items():
+            entities_by_id[entity_id] = Entity.from_dict(entity_data)
+        return cls(entities_by_id=entities_by_id)
+
+
+@dataclass
 class AgentState:
     """Current state of an agent (reconstructed from events)"""
     mbti: str
@@ -126,15 +137,15 @@ class AgentState:
     geometry_representation: str = ""
     current_mood: str = ""
     philosophy: str = ""
-
     current_self_reflection: Dict[str, str] = field(default_factory=dict)
-    goals: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    capabilities: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    limitations: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    aspirations: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    entity_collections: Dict[str, EntityCollection] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'AgentState':
+        entity_collections = {}
+        for entity_type, collection_data in data.get('entity_collections', {}).items():
+            entity_collections[entity_type] = EntityCollection.from_dict(collection_data)
+
         return cls(
             mbti=data.get('mbti', ''),
             mbti_confidence=data.get('mbti_confidence', 0.0),
@@ -142,10 +153,7 @@ class AgentState:
             current_mood=data.get('current_mood', ''),
             philosophy=data.get('philosophy', ''),
             current_self_reflection=data.get('current_self_reflection', {}),
-            goals=data.get('goals', {}),
-            capabilities=data.get('capabilities', {}),
-            limitations=data.get('limitations', {}),
-            aspirations=data.get('aspirations', {})
+            entity_collections=entity_collections
         )
 
 

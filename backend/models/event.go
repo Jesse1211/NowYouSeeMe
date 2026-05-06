@@ -17,18 +17,12 @@ type Event struct {
 }
 
 // EventPayload represents the structure of raw_payload JSONB for event
+// Similar to Operation but kept separate for independent evolution
 type EventPayload struct {
-	// Goal events
-	GoalID     string `json:"goal_id,omitempty"`
-	Title      string `json:"title,omitempty"`
-	Status     string `json:"status,omitempty"`
-	FromStatus string `json:"from_status,omitempty"`
-	ToStatus   string `json:"to_status,omitempty"`
-	Checkpoint string `json:"checkpoint,omitempty"`
-	Reason     string `json:"reason,omitempty"`
-
-	// Entity events
-	CapabilityID string `json:"capability_id,omitempty"`
-	LimitationID string `json:"limitation_id,omitempty"`
-	AspirationID string `json:"aspiration_id,omitempty"`
+	EntityType    EntityType    `json:"entity_type"`
+	Op            OperationType `json:"op"`
+	EntityID      string        `json:"entity_id,omitempty"`
+	EntityContent string        `json:"entity_content,omitempty"`
+	TargetStatus  Status        `json:"target_status,omitempty"`
+	Note          string        `json:"note,omitempty"`
 }

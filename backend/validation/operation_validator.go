@@ -37,211 +37,163 @@ func ValidateOperations(operations []models.Operation, latestState *models.Agent
 }
 
 func validateOperation(op models.Operation, state *models.AgentState) error {
+	// Validate entity type
+	if !op.EntityType.IsValid() {
+		return fmt.Errorf("invalid entity type: %s", op.EntityType)
+	}
+
+	// Validate operation type
+	if !op.Op.IsValid() {
+		return fmt.Errorf("invalid operation type: %s", op.Op)
+	}
+
+	// Get entity collection (create if needed)
+	collection, exists := state.EntityCollections[op.EntityType]
+	if !exists {
+		collection = models.EntityCollection{EntitiesById: make(map[string]models.Entity)}
+		state.EntityCollections[op.EntityType] = collection
+	}
+
+	// Validate based on operation type
 	switch op.Op {
-	case models.OpGoalCreate:
-		return validateGoalCreate(op, state)
-	case models.OpGoalTransition:
-		return validateGoalTransition(op, state)
-	case models.OpGoalUpdate:
-		return validateGoalUpdate(op, state)
-	case models.OpGoalComplete:
-		return validateGoalComplete(op, state)
-	case models.OpGoalAbandon:
-		return validateGoalAbandon(op, state)
-
-	case models.OpCapabilityAdd:
-		return validateEntityAdd(op.CapabilityID, state.Capabilities, "capability")
-	case models.OpCapabilityRemove:
-		return validateEntityRemove(op.CapabilityID, state.Capabilities, "capability")
-	case models.OpCapabilityUpdate:
-		return validateEntityUpdate(op.CapabilityID, state.Capabilities, "capability")
-
-	case models.OpLimitationAdd:
-		return validateEntityAdd(op.LimitationID, state.Limitations, "limitation")
-	case models.OpLimitationRemove:
-		return validateEntityRemove(op.LimitationID, state.Limitations, "limitation")
-	case models.OpLimitationUpdate:
-		return validateEntityUpdate(op.LimitationID, state.Limitations, "limitation")
-
-	case models.OpAspirationAdd:
-		return validateEntityAdd(op.AspirationID, state.Aspirations, "aspiration")
-	case models.OpAspirationRemove:
-		return validateEntityRemove(op.AspirationID, state.Aspirations, "aspiration")
-	case models.OpAspirationUpdate:
-		return validateEntityUpdate(op.AspirationID, state.Aspirations, "aspiration")
-
+	case models.OpCreate:
+		return validateCreate(op, collection, op.EntityType)
+	case models.OpUpdate:
+		return validateUpdate(op, collection, op.EntityType)
+	case models.OpDelete:
+		return validateDelete(op, collection, op.EntityType)
 	default:
-		return fmt.Errorf("unknown operation type: %s", op.Op)
+		return fmt.Errorf("unsupported operation: %s", op.Op)
 	}
 }
 
-// Goal validation functions
-func validateGoalCreate(op models.Operation, state *models.AgentState) error {
-	if op.GoalID == "" || op.Title == "" || op.Status == "" {
-		return fmt.Errorf("goal_create requires goal_id, title, and status")
+func validateCreate(op models.Operation, collection models.EntityCollection, entityType models.EntityType) error {
+	// Validate required fields
+	if op.EntityID == "" || op.EntityContent == "" {
+		return fmt.Errorf("create %s requires entity_id and entity_content", entityType)
 	}
-	if _, exists := state.Goals[op.GoalID]; exists {
-		return fmt.Errorf("goal %s already exists", op.GoalID)
+
+	// Check if entity already exists
+	if _, exists := collection.EntitiesById[op.EntityID]; exists {
+		return fmt.Errorf("%s %s already exists", entityType, op.EntityID)
 	}
-	return ValidateGoalCreateStatus(op.Status)
+
+	// Validate target status
+	if op.TargetStatus == "" {
+		return fmt.Errorf("create %s requires target_status", entityType)
+	}
+	if !op.TargetStatus.IsValid() {
+		return fmt.Errorf("invalid status: %s", op.TargetStatus)
+	}
+
+	// Only allow pending or progress for new entities
+	if op.TargetStatus != models.StatusPending && op.TargetStatus != models.StatusProgress {
+		return fmt.Errorf("new %s can only be pending or progress, got: %s", entityType, op.TargetStatus)
+	}
+
+	return nil
 }
 
-func validateGoalTransition(op models.Operation, state *models.AgentState) error {
-	if op.GoalID == "" || op.FromStatus == "" || op.ToStatus == "" {
-		return fmt.Errorf("goal_transition requires goal_id, from_status, and to_status")
+func validateUpdate(op models.Operation, collection models.EntityCollection, entityType models.EntityType) error {
+	// Validate required fields
+	if op.EntityID == "" {
+		return fmt.Errorf("update %s requires entity_id", entityType)
 	}
 
-	goal, exists := state.Goals[op.GoalID]
+	// Check if entity exists
+	entity, exists := collection.EntitiesById[op.EntityID]
 	if !exists {
-		return fmt.Errorf("goal %s not found", op.GoalID)
+		return fmt.Errorf("%s %s not found", entityType, op.EntityID)
 	}
 
-	if goal.Status != op.FromStatus {
-		return fmt.Errorf("goal %s is in status %s, not %s", op.GoalID, goal.Status, op.FromStatus)
+	// At least one field must be provided for update
+	if op.EntityContent == "" && op.TargetStatus == "" {
+		return fmt.Errorf("update %s requires at least one of: entity_content or target_status", entityType)
 	}
 
-	return ValidateGoalTransition(op.FromStatus, op.ToStatus)
-}
-
-func validateGoalUpdate(op models.Operation, state *models.AgentState) error {
-	if op.GoalID == "" || op.Title == "" {
-		return fmt.Errorf("goal_update requires goal_id and title")
-	}
-	if _, exists := state.Goals[op.GoalID]; !exists {
-		return fmt.Errorf("goal %s not found", op.GoalID)
-	}
-	return nil
-}
-
-func validateGoalComplete(op models.Operation, state *models.AgentState) error {
-	if op.GoalID == "" {
-		return fmt.Errorf("goal_complete requires goal_id")
-	}
-
-	goal, exists := state.Goals[op.GoalID]
-	if !exists {
-		return fmt.Errorf("goal %s not found", op.GoalID)
-	}
-
-	if goal.Status != "progressing" {
-		return fmt.Errorf("can only complete goals in 'progressing' status, got: %s", goal.Status)
+	// Validate status transition if provided
+	if op.TargetStatus != "" {
+		if !op.TargetStatus.IsValid() {
+			return fmt.Errorf("invalid status: %s", op.TargetStatus)
+		}
+		// For goals, validate status transitions
+		if entityType == models.EntityGoal {
+			if err := ValidateGoalStatusTransition(entity.Status, op.TargetStatus); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
 }
 
-func validateGoalAbandon(op models.Operation, state *models.AgentState) error {
-	if op.GoalID == "" {
-		return fmt.Errorf("goal_abandon requires goal_id")
+func validateDelete(op models.Operation, collection models.EntityCollection, entityType models.EntityType) error {
+	// Validate required fields
+	if op.EntityID == "" {
+		return fmt.Errorf("delete %s requires entity_id", entityType)
 	}
-	if _, exists := state.Goals[op.GoalID]; !exists {
-		return fmt.Errorf("goal %s not found", op.GoalID)
-	}
-	return nil
-}
 
-// Entity validation functions
-func validateEntityAdd(id string, entities map[string]models.Entity, entityType string) error {
-	if id == "" {
-		return fmt.Errorf("%s_add requires %s_id", entityType, entityType)
+	// Check if entity exists
+	if _, exists := collection.EntitiesById[op.EntityID]; !exists {
+		return fmt.Errorf("%s %s not found", entityType, op.EntityID)
 	}
-	if _, exists := entities[id]; exists {
-		return fmt.Errorf("%s %s already exists", entityType, id)
-	}
-	return nil
-}
 
-func validateEntityRemove(id string, entities map[string]models.Entity, entityType string) error {
-	if id == "" {
-		return fmt.Errorf("%s_remove requires %s_id", entityType, entityType)
-	}
-	if _, exists := entities[id]; !exists {
-		return fmt.Errorf("%s %s not found", entityType, id)
-	}
-	return nil
-}
-
-func validateEntityUpdate(id string, entities map[string]models.Entity, entityType string) error {
-	if id == "" {
-		return fmt.Errorf("%s_update requires %s_id", entityType, entityType)
-	}
-	if _, exists := entities[id]; !exists {
-		return fmt.Errorf("%s %s not found", entityType, id)
-	}
 	return nil
 }
 
 // State manipulation helpers
 func cloneState(state *models.AgentState) *models.AgentState {
 	clone := &models.AgentState{
-		MBTI:                 state.MBTI,
-		MBTIConfidence:       state.MBTIConfidence,
-		GeometryRep:          state.GeometryRep,
-		CurrentMood:          state.CurrentMood,
-		Philosophy:           state.Philosophy,
+		MBTI:                  state.MBTI,
+		MBTIConfidence:        state.MBTIConfidence,
+		GeometryRep:           state.GeometryRep,
+		CurrentMood:           state.CurrentMood,
+		Philosophy:            state.Philosophy,
 		CurrentSelfReflection: state.CurrentSelfReflection,
-		Goals:                make(map[string]models.Goal),
-		Capabilities:         make(map[string]models.Entity),
-		Limitations:          make(map[string]models.Entity),
-		Aspirations:          make(map[string]models.Entity),
+		EntityCollections:     make(map[models.EntityType]models.EntityCollection),
 	}
 
-	for k, v := range state.Goals {
-		clone.Goals[k] = v
-	}
-	for k, v := range state.Capabilities {
-		clone.Capabilities[k] = v
-	}
-	for k, v := range state.Limitations {
-		clone.Limitations[k] = v
-	}
-	for k, v := range state.Aspirations {
-		clone.Aspirations[k] = v
+	// Clone each entity collection
+	for entityType, collection := range state.EntityCollections {
+		clonedCollection := models.EntityCollection{
+			EntitiesById: make(map[string]models.Entity),
+		}
+		for id, entity := range collection.EntitiesById {
+			clonedCollection.EntitiesById[id] = entity
+		}
+		clone.EntityCollections[entityType] = clonedCollection
 	}
 
 	return clone
 }
 
 func applyOperationToState(op models.Operation, state *models.AgentState) {
+	// Ensure collection exists
+	collection, exists := state.EntityCollections[op.EntityType]
+	if !exists {
+		collection = models.EntityCollection{EntitiesById: make(map[string]models.Entity)}
+		state.EntityCollections[op.EntityType] = collection
+	}
+
 	switch op.Op {
-	case models.OpGoalCreate:
-		state.Goals[op.GoalID] = models.Goal{Title: op.Title, Status: op.Status}
-	case models.OpGoalTransition:
-		goal := state.Goals[op.GoalID]
-		goal.Status = op.ToStatus
-		state.Goals[op.GoalID] = goal
-	case models.OpGoalUpdate:
-		goal := state.Goals[op.GoalID]
-		goal.Title = op.Title
-		state.Goals[op.GoalID] = goal
-	case models.OpGoalComplete:
-		goal := state.Goals[op.GoalID]
-		goal.Status = "completed"
-		state.Goals[op.GoalID] = goal
-	case models.OpGoalAbandon:
-		goal := state.Goals[op.GoalID]
-		goal.Status = "abandoned"
-		state.Goals[op.GoalID] = goal
+	case models.OpCreate:
+		collection.EntitiesById[op.EntityID] = models.Entity{
+			Id:      op.EntityID,
+			Content: op.EntityContent,
+			Status:  op.TargetStatus,
+		}
 
-	case models.OpCapabilityAdd:
-		state.Capabilities[op.CapabilityID] = models.Entity{Title: op.Title}
-	case models.OpCapabilityRemove:
-		delete(state.Capabilities, op.CapabilityID)
-	case models.OpCapabilityUpdate:
-		state.Capabilities[op.CapabilityID] = models.Entity{Title: op.Title}
+	case models.OpUpdate:
+		entity := collection.EntitiesById[op.EntityID]
+		if op.EntityContent != "" {
+			entity.Content = op.EntityContent
+		}
+		if op.TargetStatus != "" {
+			entity.Status = op.TargetStatus
+		}
+		collection.EntitiesById[op.EntityID] = entity
 
-	case models.OpLimitationAdd:
-		state.Limitations[op.LimitationID] = models.Entity{Title: op.Title}
-	case models.OpLimitationRemove:
-		delete(state.Limitations, op.LimitationID)
-	case models.OpLimitationUpdate:
-		state.Limitations[op.LimitationID] = models.Entity{Title: op.Title}
-
-	case models.OpAspirationAdd:
-		state.Aspirations[op.AspirationID] = models.Entity{Title: op.Title}
-	case models.OpAspirationRemove:
-		delete(state.Aspirations, op.AspirationID)
-	case models.OpAspirationUpdate:
-		state.Aspirations[op.AspirationID] = models.Entity{Title: op.Title}
+	case models.OpDelete:
+		delete(collection.EntitiesById, op.EntityID)
 	}
 }

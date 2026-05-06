@@ -1,34 +1,13 @@
 package models
 
-// OperationType represents the type of operation that can be performed
+// OperationType represents the type of CRUD operation
 type OperationType string
 
-// Operation type constants - these are the ONLY valid operation types
+// Operation type constants - simplified to CRUD operations
 const (
-	// Goal operations
-	OpGoalCreate     OperationType = "goal_create"
-	OpGoalTransition OperationType = "goal_transition"
-	OpGoalUpdate     OperationType = "goal_update"
-	OpGoalComplete   OperationType = "goal_complete"
-	OpGoalAbandon    OperationType = "goal_abandon"
-
-	// Capability operations
-	OpCapabilityAdd    OperationType = "capability_add"
-	OpCapabilityRemove OperationType = "capability_remove"
-	OpCapabilityUpdate OperationType = "capability_update"
-
-	// Limitation operations
-	OpLimitationAdd    OperationType = "limitation_add"
-	OpLimitationRemove OperationType = "limitation_remove"
-	OpLimitationUpdate OperationType = "limitation_update"
-
-	// Aspiration operations
-	OpAspirationAdd    OperationType = "aspiration_add"
-	OpAspirationRemove OperationType = "aspiration_remove"
-	OpAspirationUpdate OperationType = "aspiration_update"
-
-	// Metadata operations
-	OpMetadataUpdate OperationType = "metadata_update"
+	OpCreate OperationType = "create"
+	OpUpdate OperationType = "update"
+	OpDelete OperationType = "delete"
 )
 
 // String returns the string representation of the operation type
@@ -39,11 +18,7 @@ func (o OperationType) String() string {
 // IsValid checks if the operation type is valid
 func (o OperationType) IsValid() bool {
 	switch o {
-	case OpGoalCreate, OpGoalTransition, OpGoalUpdate, OpGoalComplete, OpGoalAbandon,
-		OpCapabilityAdd, OpCapabilityRemove, OpCapabilityUpdate,
-		OpLimitationAdd, OpLimitationRemove, OpLimitationUpdate,
-		OpAspirationAdd, OpAspirationRemove, OpAspirationUpdate,
-		OpMetadataUpdate:
+	case OpCreate, OpUpdate, OpDelete:
 		return true
 	default:
 		return false
@@ -52,11 +27,5 @@ func (o OperationType) IsValid() bool {
 
 // AllOperationTypes returns all valid operation types
 func AllOperationTypes() []OperationType {
-	return []OperationType{
-		OpGoalCreate, OpGoalTransition, OpGoalUpdate, OpGoalComplete, OpGoalAbandon,
-		OpCapabilityAdd, OpCapabilityRemove, OpCapabilityUpdate,
-		OpLimitationAdd, OpLimitationRemove, OpLimitationUpdate,
-		OpAspirationAdd, OpAspirationRemove, OpAspirationUpdate,
-		OpMetadataUpdate,
-	}
+	return []OperationType{OpCreate, OpUpdate, OpDelete}
 }

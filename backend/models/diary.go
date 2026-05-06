@@ -35,25 +35,12 @@ type SelfReflection struct {
 
 // Operation represents a single state-changing operation
 type Operation struct {
-	Op OperationType `json:"op" binding:"required"`
-
-	// Goal operations
-	GoalID     string `json:"goal_id,omitempty"`
-	Title      string `json:"title,omitempty"`
-	Status     string `json:"status,omitempty"`
-	FromStatus string `json:"from_status,omitempty"`
-	ToStatus   string `json:"to_status,omitempty"`
-	Reason     string `json:"reason,omitempty"`
-	Checkpoint string `json:"checkpoint,omitempty"`
-
-	// Capability operations
-	CapabilityID string `json:"capability_id,omitempty"`
-
-	// Limitation operations
-	LimitationID string `json:"limitation_id,omitempty"`
-
-	// Aspiration operations
-	AspirationID string `json:"aspiration_id,omitempty"`
+	EntityType    EntityType    `json:"entity_type" binding:"required"`
+	Op            OperationType `json:"op" binding:"required"`
+	EntityID      string        `json:"entity_id,omitempty"`
+	EntityContent string        `json:"entity_content,omitempty"`
+	TargetStatus  Status        `json:"target_status,omitempty"`
+	Note          string        `json:"note,omitempty"`
 }
 
 // SubmitDiaryRequest represents diary submission API request

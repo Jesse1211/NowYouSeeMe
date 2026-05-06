@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"nowyouseeme/models"
+	"nowyouseeme/validation"
 	"time"
 
 	"github.com/google/uuid"
@@ -104,10 +105,9 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	latestMBTI := result.State.MBTI
 
 	// Validate operations
-	// TODO: Re-enable after fixing seed script state tracking
-	// if err := validation.ValidateOperations(payload.Operations, result.State); err != nil {
-	// 	return nil, err
-	// }
+	if err := validation.ValidateOperations(payload.Operations, result.State); err != nil {
+		return nil, err
+	}
 
 	// Insert diary version
 	diaryID, err := s.insertDiaryVersionTx(tx, agentID, payload)

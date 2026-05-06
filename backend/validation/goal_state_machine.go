@@ -1,35 +1,46 @@
 package validation
 
-import "fmt"
+import (
+	"fmt"
+	"nowyouseeme/models"
+)
 
-// ValidGoalTransitions defines allowed state transitions
-var ValidGoalTransitions = map[string][]string{
-	"future":      {"progressing", "abandoned"},
-	"progressing": {"completed", "abandoned", "future"},
-	"abandoned":   {"future", "progressing"},
-	"completed":   {}, // terminal state
-}
-
-// ValidateGoalTransition checks if a goal transition is valid
-func ValidateGoalTransition(fromStatus, toStatus string) error {
-	allowedTransitions, exists := ValidGoalTransitions[fromStatus]
-	if !exists {
-		return fmt.Errorf("invalid goal status: %s", fromStatus)
+// ValidateGoalStatusTransition validates if a status transition is allowed
+func ValidateGoalStatusTransition(from, to models.Status) error {
+	// Allow same status (no-op)
+	if from == to {
+		return nil
 	}
 
-	for _, allowed := range allowedTransitions {
-		if allowed == toStatus {
+	validTransitions := map[models.Status][]models.Status{
+		models.StatusPending: {
+			models.StatusProgress,
+			models.StatusAbandoned,
+		},
+		models.StatusProgress: {
+			models.StatusCompleted,
+			models.StatusAbandoned,
+			models.StatusPending, // Allow moving back to pending
+		},
+		models.StatusCompleted: {
+			// Completed is terminal - no transitions allowed
+		},
+		models.StatusAbandoned: {
+			models.StatusPending,  // Allow reactivation
+			models.StatusProgress, // Allow reactivation directly to progress
+		},
+	}
+
+	allowed, exists := validTransitions[from]
+	if !exists {
+		return fmt.Errorf("unknown status: %s", from)
+	}
+
+	for _, allowedStatus := range allowed {
+		if to == allowedStatus {
 			return nil
 		}
 	}
 
-	return fmt.Errorf("invalid transition: %s → %s", fromStatus, toStatus)
-}
-
-// ValidateGoalCreateStatus checks if status is valid for goal creation
-func ValidateGoalCreateStatus(status string) error {
-	if status != "future" && status != "progressing" {
-		return fmt.Errorf("goal_create status must be 'future' or 'progressing' (MVP limitation), got: %s", status)
-	}
-	return nil
+	return fmt.Errorf("invalid status transition: %s -> %s", from, to)
 }
