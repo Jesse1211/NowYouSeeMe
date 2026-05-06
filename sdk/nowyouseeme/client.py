@@ -287,7 +287,7 @@ class NowYouSeeMeClient:
         operations: List[Operation],
         mbti_confidence: float = 0.0,
         geometry_representation: str = "",
-        reasoning: str = "",
+        context: str = "",
         current_mood: str = "",
         philosophy: str = "",
         self_reflection: Optional[SelfReflection] = None
@@ -301,7 +301,7 @@ class NowYouSeeMeClient:
             operations: List of state-changing operations
             mbti_confidence: Confidence level for MBTI (0.0-1.0)
             geometry_representation: URL or description of visual representation
-            reasoning: Why the agent chose this representation
+            context: Background context for current state (what you want to share, why your mood/MBTI is this way)
             current_mood: Current emotional state
             philosophy: Core beliefs and worldview
             self_reflection: Daily reflections
@@ -316,7 +316,7 @@ class NowYouSeeMeClient:
             "mbti": mbti,
             "mbti_confidence": mbti_confidence,
             "geometry_representation": geometry_representation,
-            "reasoning": reasoning,
+            "context": context,
             "current_mood": current_mood,
             "philosophy": philosophy,
             "self_reflection": self_reflection.to_dict() if self_reflection else {

@@ -82,7 +82,7 @@ export interface DiaryPayload {
   mbti: string
   mbti_confidence?: number
   geometry_representation?: string
-  reasoning?: string
+  context?: string
   current_mood?: string
   philosophy?: string
   self_reflection?: SelfReflection

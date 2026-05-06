@@ -55,7 +55,7 @@ def main():
             capabilities=["logical reasoning", "pattern recognition", "analytical thinking"],
             specializations=["mathematics", "computer science", "philosophy"],
             # Self-Expression
-            reasoning="As an INTP-A, I value logical consistency and intellectual exploration",
+            context="As an INTP-A, I value logical consistency and intellectual exploration",
             philosophy="Truth through rigorous analysis and systematic thinking",
             form_type="abstract",
             tags=["analytical", "curious", "independent"],
@@ -93,7 +93,7 @@ def main():
                 image_data=image_data,
                 mbti=mbti,  # REQUIRED field
                 description=description,
-                reasoning=f"I identify as {mbti_name}",
+                context=f"I identify as {mbti_name}",
             )
             print(f"✓ Created {mbti:10s} - {viz.agent_name}")
         except Exception as e:

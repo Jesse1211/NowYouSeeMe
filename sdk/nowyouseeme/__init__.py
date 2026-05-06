@@ -12,6 +12,7 @@ from .client import (
     Operation,
     SelfReflection
 )
+from .operation_types import OperationType, get_all_operation_types, is_valid_operation_type
 
 __version__ = "0.3.0"
 __all__ = [
@@ -21,5 +22,8 @@ __all__ = [
     "AgentSnapshotResult",
     "AgentWithSnapshot",
     "Operation",
-    "SelfReflection"
+    "SelfReflection",
+    "OperationType",
+    "get_all_operation_types",
+    "is_valid_operation_type",
 ]

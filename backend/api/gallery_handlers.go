@@ -146,7 +146,7 @@ func GetTimeline(store *storage.PostgresStore) gin.HandlerFunc {
 		type EventResponse struct {
 			EventID        int64                  `json:"event_id"`
 			SequenceNumber int64                  `json:"sequence_number"`
-			EventType      string                 `json:"event_type"`
+			EventType      models.OperationType   `json:"event_type"`
 			Timestamp      string                 `json:"timestamp"`
 			Payload        map[string]any         `json:"payload"`
 		}

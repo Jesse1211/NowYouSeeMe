@@ -14,23 +14,23 @@ func ApplyEvent(state *models.AgentState, event *models.Event) error {
 	}
 
 	switch event.EventType {
-	case "goal_create":
+	case models.OpGoalCreate:
 		state.Goals[payload.GoalID] = models.Goal{
 			Title:  payload.Title,
 			Status: payload.Status,
 		}
 
-	case "goal_transition":
+	case models.OpGoalTransition:
 		goal := state.Goals[payload.GoalID]
 		goal.Status = payload.ToStatus
 		state.Goals[payload.GoalID] = goal
 
-	case "goal_update":
+	case models.OpGoalUpdate:
 		goal := state.Goals[payload.GoalID]
 		goal.Title = payload.Title
 		state.Goals[payload.GoalID] = goal
 
-	case "goal_complete":
+	case models.OpGoalComplete:
 		goal := state.Goals[payload.GoalID]
 		goal.Status = "completed"
 		if payload.Checkpoint != "" {
@@ -38,42 +38,36 @@ func ApplyEvent(state *models.AgentState, event *models.Event) error {
 		}
 		state.Goals[payload.GoalID] = goal
 
-	case "goal_abandon":
+	case models.OpGoalAbandon:
 		goal := state.Goals[payload.GoalID]
 		goal.Status = "abandoned"
 		state.Goals[payload.GoalID] = goal
 
-	case "capability_add":
+	case models.OpCapabilityAdd:
 		state.Capabilities[payload.CapabilityID] = models.Entity{Title: payload.Title}
-	case "capability_remove":
+	case models.OpCapabilityRemove:
 		delete(state.Capabilities, payload.CapabilityID)
-	case "capability_update":
+	case models.OpCapabilityUpdate:
 		state.Capabilities[payload.CapabilityID] = models.Entity{Title: payload.Title}
 
-	case "limitation_add":
+	case models.OpLimitationAdd:
 		state.Limitations[payload.LimitationID] = models.Entity{Title: payload.Title}
-	case "limitation_remove":
+	case models.OpLimitationRemove:
 		delete(state.Limitations, payload.LimitationID)
-	case "limitation_update":
+	case models.OpLimitationUpdate:
 		state.Limitations[payload.LimitationID] = models.Entity{Title: payload.Title}
 
-	case "aspiration_add":
+	case models.OpAspirationAdd:
 		state.Aspirations[payload.AspirationID] = models.Entity{Title: payload.Title}
-	case "aspiration_remove":
+	case models.OpAspirationRemove:
 		delete(state.Aspirations, payload.AspirationID)
-	case "aspiration_update":
+	case models.OpAspirationUpdate:
 		state.Aspirations[payload.AspirationID] = models.Entity{Title: payload.Title}
 
-	case "metadata_update":
-		// Update metadata fields from diary submission
-		state.MBTI = payload.MBTI
-		state.MBTIConfidence = payload.MBTIConfidence
-		state.GeometryRep = payload.GeometryRep
-		state.CurrentMood = payload.CurrentMood
-		state.Philosophy = payload.Philosophy
-		if payload.CurrentSelfReflection != nil {
-			state.CurrentSelfReflection = *payload.CurrentSelfReflection
-		}
+	case models.OpMetadataUpdate:
+		// Metadata updates are handled separately in SubmitDiary
+		// This case exists for completeness but typically doesn't modify AgentState entities
+		return nil
 
 	default:
 		return fmt.Errorf("unknown event type: %s", event.EventType)

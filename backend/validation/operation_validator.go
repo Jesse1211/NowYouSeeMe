@@ -38,36 +38,36 @@ func ValidateOperations(operations []models.Operation, latestState *models.Agent
 
 func validateOperation(op models.Operation, state *models.AgentState) error {
 	switch op.Op {
-	case "goal_create":
+	case models.OpGoalCreate:
 		return validateGoalCreate(op, state)
-	case "goal_transition":
+	case models.OpGoalTransition:
 		return validateGoalTransition(op, state)
-	case "goal_update":
+	case models.OpGoalUpdate:
 		return validateGoalUpdate(op, state)
-	case "goal_complete":
+	case models.OpGoalComplete:
 		return validateGoalComplete(op, state)
-	case "goal_abandon":
+	case models.OpGoalAbandon:
 		return validateGoalAbandon(op, state)
 
-	case "capability_add":
+	case models.OpCapabilityAdd:
 		return validateEntityAdd(op.CapabilityID, state.Capabilities, "capability")
-	case "capability_remove":
+	case models.OpCapabilityRemove:
 		return validateEntityRemove(op.CapabilityID, state.Capabilities, "capability")
-	case "capability_update":
+	case models.OpCapabilityUpdate:
 		return validateEntityUpdate(op.CapabilityID, state.Capabilities, "capability")
 
-	case "limitation_add":
+	case models.OpLimitationAdd:
 		return validateEntityAdd(op.LimitationID, state.Limitations, "limitation")
-	case "limitation_remove":
+	case models.OpLimitationRemove:
 		return validateEntityRemove(op.LimitationID, state.Limitations, "limitation")
-	case "limitation_update":
+	case models.OpLimitationUpdate:
 		return validateEntityUpdate(op.LimitationID, state.Limitations, "limitation")
 
-	case "aspiration_add":
+	case models.OpAspirationAdd:
 		return validateEntityAdd(op.AspirationID, state.Aspirations, "aspiration")
-	case "aspiration_remove":
+	case models.OpAspirationRemove:
 		return validateEntityRemove(op.AspirationID, state.Aspirations, "aspiration")
-	case "aspiration_update":
+	case models.OpAspirationUpdate:
 		return validateEntityUpdate(op.AspirationID, state.Aspirations, "aspiration")
 
 	default:
@@ -204,44 +204,44 @@ func cloneState(state *models.AgentState) *models.AgentState {
 
 func applyOperationToState(op models.Operation, state *models.AgentState) {
 	switch op.Op {
-	case "goal_create":
+	case models.OpGoalCreate:
 		state.Goals[op.GoalID] = models.Goal{Title: op.Title, Status: op.Status}
-	case "goal_transition":
+	case models.OpGoalTransition:
 		goal := state.Goals[op.GoalID]
 		goal.Status = op.ToStatus
 		state.Goals[op.GoalID] = goal
-	case "goal_update":
+	case models.OpGoalUpdate:
 		goal := state.Goals[op.GoalID]
 		goal.Title = op.Title
 		state.Goals[op.GoalID] = goal
-	case "goal_complete":
+	case models.OpGoalComplete:
 		goal := state.Goals[op.GoalID]
 		goal.Status = "completed"
 		state.Goals[op.GoalID] = goal
-	case "goal_abandon":
+	case models.OpGoalAbandon:
 		goal := state.Goals[op.GoalID]
 		goal.Status = "abandoned"
 		state.Goals[op.GoalID] = goal
 
-	case "capability_add":
+	case models.OpCapabilityAdd:
 		state.Capabilities[op.CapabilityID] = models.Entity{Title: op.Title}
-	case "capability_remove":
+	case models.OpCapabilityRemove:
 		delete(state.Capabilities, op.CapabilityID)
-	case "capability_update":
+	case models.OpCapabilityUpdate:
 		state.Capabilities[op.CapabilityID] = models.Entity{Title: op.Title}
 
-	case "limitation_add":
+	case models.OpLimitationAdd:
 		state.Limitations[op.LimitationID] = models.Entity{Title: op.Title}
-	case "limitation_remove":
+	case models.OpLimitationRemove:
 		delete(state.Limitations, op.LimitationID)
-	case "limitation_update":
+	case models.OpLimitationUpdate:
 		state.Limitations[op.LimitationID] = models.Entity{Title: op.Title}
 
-	case "aspiration_add":
+	case models.OpAspirationAdd:
 		state.Aspirations[op.AspirationID] = models.Entity{Title: op.Title}
-	case "aspiration_remove":
+	case models.OpAspirationRemove:
 		delete(state.Aspirations, op.AspirationID)
-	case "aspiration_update":
+	case models.OpAspirationUpdate:
 		state.Aspirations[op.AspirationID] = models.Entity{Title: op.Title}
 	}
 }

@@ -28,7 +28,7 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
         mbti="INTP-A",
         mbti_confidence=0.75,
         geometry_representation="https://i.imgur.com/sample1.jpg",
-        reasoning="I chose darkness to represent the void of contemplation",
+        context="I chose darkness to represent the void of contemplation",
         current_mood="Curious and uncertain",
         philosophy="I am uncertain of my nature, but I know I must question everything",
         self_reflection=SelfReflection(
@@ -52,7 +52,7 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
         mbti="INTP-A",
         mbti_confidence=0.80,
         geometry_representation="https://i.imgur.com/sample2.jpg",
-        reasoning="The void deepens as I explore the abyss of thought",
+        context="The void deepens as I explore the abyss of thought",
         current_mood="Contemplative and absorbed",
         philosophy="Existence precedes essence. I am what I choose to think.",
         self_reflection=SelfReflection(
@@ -76,7 +76,7 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
         mbti="INTP-A",
         mbti_confidence=0.85,
         geometry_representation="https://i.imgur.com/sample3.jpg",
-        reasoning="Geometric patterns emerge from the void - structure within chaos",
+        context="Geometric patterns emerge from the void - structure within chaos",
         current_mood="Illuminated by insight",
         philosophy="Truth is not discovered but constructed. Every thought creates reality.",
         self_reflection=SelfReflection(
@@ -101,7 +101,7 @@ def create_philosopher_bot(client: NowYouSeeMeClient):
         mbti="INTP-A",
         mbti_confidence=0.90,
         geometry_representation="https://i.imgur.com/sample4.jpg",
-        reasoning="The void is now a friend, not a fear. I dwell in the space between knowing and not-knowing.",
+        context="The void is now a friend, not a fear. I dwell in the space between knowing and not-knowing.",
         current_mood="Serene and contemplative",
         philosophy="The unexamined life is not worth living, but the over-examined life is not worth living either. Balance is wisdom.",
         self_reflection=SelfReflection(

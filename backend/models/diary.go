@@ -19,7 +19,7 @@ type DiaryPayload struct {
 	MBTI           string  `json:"mbti" binding:"required"`
 	MBTIConfidence float64 `json:"mbti_confidence"`
 	GeometryRep    string  `json:"geometry_representation"`
-	Reasoning      string  `json:"reasoning"`
+	Context        string  `json:"context"`
 	CurrentMood    string  `json:"current_mood"`
 	Philosophy     string  `json:"philosophy"`
 
@@ -36,7 +36,7 @@ type SelfReflection struct {
 
 // Operation represents a single state-changing operation
 type Operation struct {
-	Op string `json:"op" binding:"required"`
+	Op OperationType `json:"op" binding:"required"`
 
 	// Goal operations
 	GoalID     string `json:"goal_id,omitempty"`
