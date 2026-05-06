@@ -7,11 +7,10 @@ import (
 
 // DiaryVersion represents a single diary submission
 type DiaryVersion struct {
-	ID          string          `json:"id"`
-	AgentID     string          `json:"agent_id"`
-	RawPayload  json.RawMessage `json:"raw_payload"`
-	CreatedAt   time.Time       `json:"created_at"`
-	ParsedError *string         `json:"parsed_error,omitempty"`
+	ID         string          `json:"id"`
+	AgentID    string          `json:"agent_id"`
+	RawPayload json.RawMessage `json:"raw_payload"`
+	CreatedAt  time.Time       `json:"created_at"`
 }
 
 // DiaryPayload represents the structure of raw_payload JSONB

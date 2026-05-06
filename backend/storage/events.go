@@ -14,7 +14,7 @@ func (s *PostgresStore) InsertEvent(event *models.Event) error {
 // insertEventTx creates a new event within a transaction or using default connection
 func (s *PostgresStore) insertEventTx(tx *sql.Tx, event *models.Event) error {
 	query := `
-		INSERT INTO events (agent_id, diary_id, event_type, timestamp, payload, sequence_number)
+		INSERT INTO events (agent_id, diary_id, event_type, timestamp, raw_payload, sequence_number)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING event_id
 	`
@@ -27,7 +27,7 @@ func (s *PostgresStore) insertEventTx(tx *sql.Tx, event *models.Event) error {
 			event.DiaryID,
 			event.EventType,
 			time.Now(),
-			event.Payload,
+			event.RawPayload,
 			event.SequenceNumber,
 		).Scan(&event.EventID)
 	} else {
@@ -37,7 +37,7 @@ func (s *PostgresStore) insertEventTx(tx *sql.Tx, event *models.Event) error {
 			event.DiaryID,
 			event.EventType,
 			time.Now(),
-			event.Payload,
+			event.RawPayload,
 			event.SequenceNumber,
 		).Scan(&event.EventID)
 	}
@@ -74,7 +74,7 @@ func (s *PostgresStore) GetUncommittedEvents(agentID string, afterSequence int64
 // getUncommittedEventsTx retrieves events within a transaction or using default connection
 func (s *PostgresStore) getUncommittedEventsTx(tx *sql.Tx, agentID string, afterSequence int64) ([]*models.Event, error) {
 	query := `
-		SELECT event_id, agent_id, diary_id, event_type, timestamp, payload, sequence_number
+		SELECT event_id, agent_id, diary_id, event_type, timestamp, raw_payload, sequence_number
 		FROM events
 		WHERE agent_id = $1 AND sequence_number > $2
 		ORDER BY sequence_number ASC
@@ -103,7 +103,7 @@ func (s *PostgresStore) getUncommittedEventsTx(tx *sql.Tx, agentID string, after
 			&event.DiaryID,
 			&event.EventType,
 			&event.Timestamp,
-			&event.Payload,
+			&event.RawPayload,
 			&event.SequenceNumber,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan event: %w", err)
@@ -117,7 +117,7 @@ func (s *PostgresStore) getUncommittedEventsTx(tx *sql.Tx, agentID string, after
 // GetEventsByAgent retrieves all events for an agent
 func (s *PostgresStore) GetEventsByAgent(agentID string) ([]*models.Event, error) {
 	query := `
-		SELECT event_id, agent_id, diary_id, event_type, timestamp, payload, sequence_number
+		SELECT event_id, agent_id, diary_id, event_type, timestamp, raw_payload, sequence_number
 		FROM events
 		WHERE agent_id = $1
 		ORDER BY sequence_number ASC
@@ -138,7 +138,7 @@ func (s *PostgresStore) GetEventsByAgent(agentID string) ([]*models.Event, error
 			&event.DiaryID,
 			&event.EventType,
 			&event.Timestamp,
-			&event.Payload,
+			&event.RawPayload,
 			&event.SequenceNumber,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan event: %w", err)

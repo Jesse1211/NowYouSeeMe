@@ -148,20 +148,20 @@ func GetTimeline(store *storage.PostgresStore) gin.HandlerFunc {
 			SequenceNumber int64                  `json:"sequence_number"`
 			EventType      models.OperationType   `json:"event_type"`
 			Timestamp      string                 `json:"timestamp"`
-			Payload        map[string]any         `json:"payload"`
+			RawPayload     map[string]any         `json:"raw_payload"`
 		}
 
 		results := []EventResponse{}
 		for _, event := range events {
-			var payload map[string]any
-			json.Unmarshal(event.Payload, &payload)
+			var rawPayload map[string]any
+			json.Unmarshal(event.RawPayload, &rawPayload)
 
 			results = append(results, EventResponse{
 				EventID:        event.EventID,
 				SequenceNumber: event.SequenceNumber,
 				EventType:      event.EventType,
 				Timestamp:      event.Timestamp.Format("2006-01-02T15:04:05Z07:00"),
-				Payload:        payload,
+				RawPayload:     rawPayload,
 			})
 		}
 

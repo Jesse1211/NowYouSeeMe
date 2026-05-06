@@ -9,7 +9,7 @@ import (
 // ApplyEvent applies a single event to state
 func ApplyEvent(state *models.AgentState, event *models.Event) error {
 	var payload models.EventPayload
-	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+	if err := json.Unmarshal(event.RawPayload, &payload); err != nil {
 		return fmt.Errorf("failed to unmarshal event payload: %w", err)
 	}
 
@@ -149,7 +149,7 @@ func OperationToEvent(op models.Operation, agentID, diaryID string, sequenceNum 
 		AgentID:        agentID,
 		DiaryID:        diaryID,
 		EventType:      op.Op,
-		Payload:        payloadJSON,
+		RawPayload:     payloadJSON,
 		SequenceNumber: sequenceNum,
 	}, nil
 }

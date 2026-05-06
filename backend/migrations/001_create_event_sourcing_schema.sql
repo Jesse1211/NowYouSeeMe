@@ -20,9 +20,7 @@ CREATE TABLE agent_diary_versions (
   id TEXT PRIMARY KEY,
   agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
   raw_payload JSONB NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL,
-
-  parsed_error TEXT
+  created_at TIMESTAMPTZ NOT NULL
 );
 
 -- ============================================
@@ -34,7 +32,7 @@ CREATE TABLE events (
   diary_id TEXT NOT NULL REFERENCES agent_diary_versions(id) ON DELETE CASCADE,
   event_type TEXT NOT NULL,
   timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  payload JSONB NOT NULL,
+  raw_payload JSONB NOT NULL,
 
   sequence_number BIGINT NOT NULL,
 

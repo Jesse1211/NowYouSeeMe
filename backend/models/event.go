@@ -12,11 +12,11 @@ type Event struct {
 	DiaryID        string          `json:"diary_id"`
 	EventType      OperationType   `json:"event_type"`
 	Timestamp      time.Time       `json:"timestamp"`
-	Payload        json.RawMessage `json:"payload"`
+	RawPayload     json.RawMessage `json:"raw_payload"`
 	SequenceNumber int64           `json:"sequence_number"`
 }
 
-// EventPayload represents typed event payloads
+// EventPayload represents the structure of raw_payload JSONB for event
 type EventPayload struct {
 	// Goal events
 	GoalID     string `json:"goal_id,omitempty"`
