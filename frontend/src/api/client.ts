@@ -79,7 +79,6 @@ export interface Operation {
 }
 
 export interface DiaryPayload {
-  diary_timestamp?: string
   mbti: string
   mbti_confidence?: number
   geometry_representation?: string
@@ -92,7 +91,6 @@ export interface DiaryPayload {
 
 export interface TimelineEntry {
   diary_id: string
-  diary_timestamp: string
   event_count: number
   snapshot: AgentState
 }

@@ -20,27 +20,21 @@ func (s *PostgresStore) insertDiaryVersionTx(tx *sql.Tx, agentID string, payload
 	diaryID := "diary_" + uuid.New().String()
 	now := time.Now()
 
-	// Use provided timestamp or default to now
-	timestamp := now
-	if payload.DiaryTimestamp != nil {
-		timestamp = *payload.DiaryTimestamp
-	}
-
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
 	query := `
-		INSERT INTO agent_diary_versions (id, agent_id, diary_timestamp, raw_payload, created_at, parsed_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO agent_diary_versions (id, agent_id, raw_payload, created_at)
+		VALUES ($1, $2, $3, $4)
 	`
 
 	var execErr error
 	if tx != nil {
-		_, execErr = tx.Exec(query, diaryID, agentID, timestamp, payloadJSON, now, now)
+		_, execErr = tx.Exec(query, diaryID, agentID, payloadJSON, now)
 	} else {
-		_, execErr = s.db.Exec(query, diaryID, agentID, timestamp, payloadJSON, now, now)
+		_, execErr = s.db.Exec(query, diaryID, agentID, payloadJSON, now)
 	}
 
 	if execErr != nil {
@@ -121,43 +115,12 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		return nil, err
 	}
 
-	// Get next sequence number
-	nextSeq := result.Sequence + 1
-
-	// Create metadata_update event (Event Sourcing purity: all state changes via events)
-	metadataEvent := &models.Event{
-		AgentID:        agentID,
-		DiaryID:        diaryID,
-		EventType:      "metadata_update",
-		SequenceNumber: nextSeq,
-	}
-	metadataPayload := models.EventPayload{
-		MBTI:                  payload.MBTI,
-		MBTIConfidence:        payload.MBTIConfidence,
-		GeometryRep:           payload.GeometryRep,
-		CurrentMood:           payload.CurrentMood,
-		Philosophy:            payload.Philosophy,
-		CurrentSelfReflection: &payload.SelfReflection,
-	}
-	metadataPayloadJSON, err := json.Marshal(metadataPayload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal metadata payload: %w", err)
-	}
-	metadataEvent.Payload = metadataPayloadJSON
-
-	// Insert metadata event
-	if err := s.insertEventTx(tx, metadataEvent); err != nil {
-		return nil, err
-	}
-
-	// Apply metadata event to state
-	if err := ApplyEvent(result.State, metadataEvent); err != nil {
-		return nil, fmt.Errorf("failed to apply metadata event: %w", err)
-	}
+	nextSeq := result.Sequence
 
 	// Create and insert operation events (starting from nextSeq + 1)
-	for i, op := range payload.Operations {
-		event, err := OperationToEvent(op, agentID, diaryID, nextSeq+1+int64(i))
+	for _, op := range payload.Operations {
+		nextSeq++
+		event, err := OperationToEvent(op, agentID, diaryID, nextSeq)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert operation to event: %w", err)
 		}
@@ -172,9 +135,6 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		}
 	}
 
-	// Calculate final sequence number (metadata event + operation events)
-	finalSeq := nextSeq + int64(len(payload.Operations))
-
 	// Check if MBTI changed and update agent record + insert timeline record
 	newMBTI := payload.MBTI
 	if newMBTI != latestMBTI {
@@ -185,7 +145,7 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		}
 
 		// Insert MBTI timeline record
-		err = s.insertMBTITimeline(tx, agentID, newMBTI, diaryID, finalSeq)
+		err = s.insertMBTITimeline(tx, agentID, newMBTI, diaryID, nextSeq)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +156,7 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	// - Conditional: Only materialize every N diary submissions (trades write performance for read performance)
 	// - Threshold: Only materialize if uncommitted events exceed threshold
 	// Current "always materialize" is optimal for read-heavy workloads.
-	if err := s.upsertSnapshotTx(tx, agentID, diaryID, result.State, finalSeq); err != nil {
+	if err := s.upsertSnapshotTx(tx, agentID, diaryID, result.State, nextSeq); err != nil {
 		return nil, err
 	}
 

@@ -290,8 +290,7 @@ class NowYouSeeMeClient:
         reasoning: str = "",
         current_mood: str = "",
         philosophy: str = "",
-        self_reflection: Optional[SelfReflection] = None,
-        diary_timestamp: Optional[datetime] = None
+        self_reflection: Optional[SelfReflection] = None
     ) -> AgentState:
         """
         Submit a diary entry with operations to evolve the agent's state.
@@ -306,7 +305,6 @@ class NowYouSeeMeClient:
             current_mood: Current emotional state
             philosophy: Core beliefs and worldview
             self_reflection: Daily reflections
-            diary_timestamp: Timestamp for this diary entry (defaults to now)
 
         Returns:
             Updated AgentState after applying operations
@@ -328,9 +326,6 @@ class NowYouSeeMeClient:
             },
             "operations": [op.to_dict() for op in operations]
         }
-
-        if diary_timestamp:
-            diary_payload["diary_timestamp"] = diary_timestamp.isoformat()
 
         payload = {
             "agent_id": agent_id,

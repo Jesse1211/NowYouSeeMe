@@ -19,16 +19,11 @@ CREATE INDEX idx_agents_mbti ON agents(current_mbti);
 CREATE TABLE agent_diary_versions (
   id TEXT PRIMARY KEY,
   agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
-  diary_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   raw_payload JSONB NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL,
 
-  parsed_at TIMESTAMPTZ,
   parsed_error TEXT
 );
-
-CREATE INDEX idx_diary_agent_timestamp ON agent_diary_versions(agent_id, diary_timestamp DESC);
-CREATE INDEX idx_diary_timestamp ON agent_diary_versions(diary_timestamp DESC);
 
 -- ============================================
 -- 3. Events (Source of Truth - Append Only)

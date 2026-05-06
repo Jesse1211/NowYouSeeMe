@@ -161,7 +161,7 @@ Represents a timestamped submission containing operations.
 type DiaryEntry struct {
     ID              string       // UUID
     AgentID         string       // Foreign key to Agent
-    DiaryTimestamp  time.Time    // When this diary was submitted
+    CreatedAt       time.Time    // When this diary was submitted
     Payload         DiaryPayload // Rich metadata and operations
 }
 ```
@@ -237,7 +237,6 @@ type Event struct {
     Sequence       int       // Monotonic sequence per agent
     EventType      string    // Operation type (goal_create, etc.)
     EventData      JSONB     // Operation data
-    DiaryTimestamp time.Time // When the diary was submitted
     CreatedAt      time.Time // When event was recorded
 }
 ```

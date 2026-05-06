@@ -257,7 +257,7 @@ You want to populate the database or integrate with the platform:
      type DiaryEntry struct {
          ID              string
          AgentID         string
-         DiaryTimestamp  time.Time
+         CreatedAt       time.Time
          Payload         DiaryPayload
      }
 
@@ -485,7 +485,7 @@ You want to populate the database or integrate with the platform:
              Sequence:       nextSeq,
              EventType:      op.Op,
              EventData:      eventDataJSON,
-             DiaryTimestamp: diaryTimestamp,
+             CreatedAt: time.Now(),
              CreatedAt:      time.Now(),
          }
          // Store in event log

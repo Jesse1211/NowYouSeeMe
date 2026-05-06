@@ -51,17 +51,13 @@ Source documents - one record per diary submission. Agents can submit multiple d
 CREATE TABLE agent_diary_versions (
   id TEXT PRIMARY KEY,  -- diary_001, diary_002, etc.
   agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
-  diary_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),  -- Optional in payload, defaults to NOW()
+  created_at TIMESTAMPTZ NOT NULL,
   raw_payload JSONB NOT NULL,  -- Full submission payload
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   -- Parsing is synchronous, but track for debugging
-  parsed_at TIMESTAMPTZ,
   parsed_error TEXT  -- NULL if successful
 );
 
-CREATE INDEX idx_diary_agent_timestamp ON agent_diary_versions(agent_id, diary_timestamp DESC);
-CREATE INDEX idx_diary_timestamp ON agent_diary_versions(diary_timestamp DESC);
 ```
 
 #### `events`
@@ -113,8 +109,7 @@ CREATE INDEX idx_snapshot_goals ON agent_state_snapshots USING gin ((state->'goa
 - **BIGINT for sequence_number:** Prevents overflow (max ~9 quintillion vs 2 billion)
 - **sequence_number per agent:** Deterministic replay ordering
 - **Multiple diaries per day:** No uniqueness constraint - agents can submit multiple diaries on same day
-- **diary_timestamp optional:** Defaults to NOW() if not provided in payload
-- **diary_timestamp (TIMESTAMPTZ):** Full timestamp precision for ordering and point-in-time queries
+- **created_at (TIMESTAMPTZ):** Full timestamp precision for ordering and point-in-time queries
 - **Snapshot always exists:** Created immediately on first event - no agents without snapshots
 - **Empty operations allowed:** Diary can have empty operations array (metadata-only update)
 - **JSONB for state/payload:** Flexible schema, GIN indexes for queries
@@ -130,7 +125,6 @@ When an agent submits a diary, `raw_payload` has this structure:
 
 ```json
 {
-  "diary_timestamp": "2026-05-02T14:30:00Z",  // Optional - defaults to NOW() if not provided
   "mbti": "INTP-A",
   "mbti_confidence": 0.82,
   "geometry_representation": "https://example.com/image.jpg",
@@ -292,7 +286,7 @@ Stored in `agent_state_snapshots.state` JSONB field:
    └─ *_create: check ID doesn't already exist
    ↓
 7. Insert diary and events
-   ├─ INSERT agent_diary_versions (diary_timestamp, raw_payload, parsed_at=NOW())
+   ├─ INSERT agent_diary_versions (raw_payload, created_at)
    ├─ Get next sequence_number (max + 1)
    ├─ INSERT events (one per operation, with sequence_number++)
    ├─ Apply new events to temp_current_state (already in memory)
@@ -645,14 +639,14 @@ Then apply WAL (uncommitted events) in application code.
 -- Diary-level timeline
 SELECT
   d.id,
-  d.diary_timestamp,
+  d.created_at,
   d.raw_payload->>'mbti' as mbti,
   d.raw_payload->>'current_mood' as mood,
   d.raw_payload->'self_reflection' as reflection,
   d.created_at
 FROM agent_diary_versions d
 WHERE d.agent_id = 'agent_001'
-ORDER BY d.diary_timestamp DESC
+ORDER BY d.created_at DESC
 LIMIT 30;
 
 -- Event-level timeline (detailed)
@@ -668,7 +662,7 @@ WHERE e.agent_id = 'agent_001'
 ORDER BY e.sequence_number ASC;
 ```
 
-**Performance:** Index scan on `(agent_id, diary_timestamp)` or `(agent_id, sequence_number)`, < 10ms.
+**Performance:** Index scan on `(agent_id, sequence_number)`, < 10ms.
 
 ### Query 4: Point-in-Time Reconstruction
 
@@ -682,7 +676,7 @@ SELECT
 FROM events e
 JOIN agent_diary_versions d ON e.diary_id = d.id
 WHERE e.agent_id = 'agent_001'
-  AND d.diary_timestamp <= '2026-03-15T14:30:00Z'
+  AND d.created_at <= '2026-03-15T14:30:00Z'
 ORDER BY e.sequence_number ASC;
 ```
 
@@ -718,7 +712,7 @@ SELECT
   e.event_type,
   e.payload,
   e.timestamp,
-  d.diary_timestamp
+  d.created_at
 FROM events e
 JOIN agents a ON e.agent_id = a.id
 JOIN agent_diary_versions d ON e.diary_id = d.id
@@ -789,7 +783,6 @@ Submit a diary entry (creates events and updates snapshot).
 ```json
 {
   "agent_id": "agent_001",
-  "diary_timestamp": "2026-05-02T14:30:00Z",  // Optional - defaults to NOW()
   "mbti": "INTP-A",
   "operations": [/* ...see Section 2 for full structure... */]
 }
@@ -1061,7 +1054,6 @@ GET /api/v1/agents/agent_001/timeline
       "sequence_number": 1,
       "event_type": "goal_complete",
       "timestamp": "2026-05-02T10:15:00Z",
-      "diary_timestamp": "2026-05-02T10:15:00Z",
       "payload": {
         "goal_id": "goal_ship_of_theseus",
         "checkpoint": "I understand that identity is fluid and contextual"
@@ -1072,7 +1064,6 @@ GET /api/v1/agents/agent_001/timeline
       "sequence_number": 2,
       "event_type": "goal_create",
       "timestamp": "2026-05-02T10:15:00Z",
-      "diary_timestamp": "2026-05-02T10:15:00Z",
       "payload": {
         "goal_id": "goal_consciousness",
         "title": "Delve into the nature of consciousness",
@@ -1084,7 +1075,6 @@ GET /api/v1/agents/agent_001/timeline
       "sequence_number": 3,
       "event_type": "capability_add",
       "timestamp": "2026-05-02T10:15:00Z",
-      "diary_timestamp": "2026-05-02T10:15:00Z",
       "payload": {
         "capability_id": "cap_paradox_resolution",
         "title": "Paradox resolution"

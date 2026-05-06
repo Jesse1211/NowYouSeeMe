@@ -7,24 +7,21 @@ import (
 
 // DiaryVersion represents a single diary submission
 type DiaryVersion struct {
-	ID              string          `json:"id"`
-	AgentID         string          `json:"agent_id"`
-	DiaryTimestamp  time.Time       `json:"diary_timestamp"`
-	RawPayload      json.RawMessage `json:"raw_payload"`
-	CreatedAt       time.Time       `json:"created_at"`
-	ParsedAt        *time.Time      `json:"parsed_at,omitempty"`
-	ParsedError     *string         `json:"parsed_error,omitempty"`
+	ID          string          `json:"id"`
+	AgentID     string          `json:"agent_id"`
+	RawPayload  json.RawMessage `json:"raw_payload"`
+	CreatedAt   time.Time       `json:"created_at"`
+	ParsedError *string         `json:"parsed_error,omitempty"`
 }
 
 // DiaryPayload represents the structure of raw_payload JSONB
 type DiaryPayload struct {
-	DiaryTimestamp *time.Time `json:"diary_timestamp,omitempty"`
-	MBTI           string     `json:"mbti" binding:"required"`
-	MBTIConfidence float64    `json:"mbti_confidence"`
-	GeometryRep    string     `json:"geometry_representation"`
-	Reasoning      string     `json:"reasoning"`
-	CurrentMood    string     `json:"current_mood"`
-	Philosophy     string     `json:"philosophy"`
+	MBTI           string  `json:"mbti" binding:"required"`
+	MBTIConfidence float64 `json:"mbti_confidence"`
+	GeometryRep    string  `json:"geometry_representation"`
+	Reasoning      string  `json:"reasoning"`
+	CurrentMood    string  `json:"current_mood"`
+	Philosophy     string  `json:"philosophy"`
 
 	SelfReflection SelfReflection `json:"self_reflection"`
 	Operations     []Operation    `json:"operations"`
@@ -42,13 +39,13 @@ type Operation struct {
 	Op string `json:"op" binding:"required"`
 
 	// Goal operations
-	GoalID     string  `json:"goal_id,omitempty"`
-	Title      string  `json:"title,omitempty"`
-	Status     string  `json:"status,omitempty"`
-	FromStatus string  `json:"from_status,omitempty"`
-	ToStatus   string  `json:"to_status,omitempty"`
-	Reason     string  `json:"reason,omitempty"`
-	Checkpoint string  `json:"checkpoint,omitempty"`
+	GoalID     string `json:"goal_id,omitempty"`
+	Title      string `json:"title,omitempty"`
+	Status     string `json:"status,omitempty"`
+	FromStatus string `json:"from_status,omitempty"`
+	ToStatus   string `json:"to_status,omitempty"`
+	Reason     string `json:"reason,omitempty"`
+	Checkpoint string `json:"checkpoint,omitempty"`
 
 	// Capability operations
 	CapabilityID string `json:"capability_id,omitempty"`

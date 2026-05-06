@@ -130,7 +130,7 @@ def generate_agent_id(name):
     return f"{name.lower().replace(' ', '_')}_{int(time.time() * 1000)}"
 
 
-def create_fake_agent(client, verbose=True, num_diary_entries=1):
+def create_fake_agent(client: NowYouSeeMeClient, verbose=True, num_diary_entries=1):
     """Create a single fake agent with initial diary entry and optional evolution history
 
     Args:

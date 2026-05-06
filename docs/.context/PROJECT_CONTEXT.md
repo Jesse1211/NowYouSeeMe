@@ -227,7 +227,6 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
             Sequence:       nextSeq,
             EventType:      op.Op,
             EventData:      eventDataJSON,
-            DiaryTimestamp: payload.DiaryTimestamp,
             CreatedAt:      time.Now(),
         }
         events = append(events, *event)
