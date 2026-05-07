@@ -86,26 +86,26 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	}
 
 	// Build current state using WAL
-	result, err := s.GetLatestSnapshot(agentID)
+	latestSnapshot, err := s.GetLatestSnapshot(agentID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Handle first diary submission - no snapshot exists yet
-	if result == nil {
-		result = &models.AgentSnapshotResult{
-			AgentID:   agentID,
-			State:     models.NewEmptyState(),
-			Sequence:  0,
-			UpdatedAt: nil,
+	if latestSnapshot == nil {
+		latestSnapshot = &models.AgentSnapshotResult{
+			AgentID:           agentID,
+			State:             models.NewEmptyState(),
+			LastEventSequence: 0,
+			UpdatedAt:         nil,
 		}
 	}
 
 	// Track old MBTI before applying changes
-	latestMBTI := result.State.MBTI
+	latestMBTI := latestSnapshot.State.MBTI
 
 	// Validate operations
-	if err := validation.ValidateOperations(payload.Operations, result.State); err != nil {
+	if err := validation.ValidateOperations(payload.Operations, latestSnapshot.State); err != nil {
 		return nil, err
 	}
 
@@ -115,12 +115,22 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		return nil, err
 	}
 
-	nextSeq := result.Sequence
+	nextSeq := latestSnapshot.LastEventSequence
 
-	// Create and insert operation events (starting from nextSeq + 1)
+	// Insert metadata event first (doesn't participate in AgentState replay)
+	nextSeq++
+	metadataEvent, err := MetadataToEventConverter(payload, agentID, diaryID, nextSeq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metadata event: %w", err)
+	}
+	if err := s.insertEventTx(tx, metadataEvent); err != nil {
+		return nil, fmt.Errorf("failed to insert metadata event: %w", err)
+	}
+
+	// Create and insert operation events (participate in AgentState replay)
 	for _, op := range payload.Operations {
 		nextSeq++
-		event, err := OperationToEvent(op, agentID, diaryID, nextSeq)
+		event, err := OperationToEventConverter(op, agentID, diaryID, nextSeq)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert operation to event: %w", err)
 		}
@@ -129,8 +139,8 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 			return nil, err
 		}
 
-		// Apply event to current state
-		if err := ApplyEvent(result.State, event); err != nil {
+		// Apply event to current state (metadata events are skipped in ApplyEventToSnapshot)
+		if err := ApplyEventToSnapshot(latestSnapshot, event); err != nil {
 			return nil, fmt.Errorf("failed to apply event to state: %w", err)
 		}
 	}
@@ -156,7 +166,7 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 	// - Conditional: Only materialize every N diary submissions (trades write performance for read performance)
 	// - Threshold: Only materialize if uncommitted events exceed threshold
 	// Current "always materialize" is optimal for read-heavy workloads.
-	if err := s.upsertSnapshotTx(tx, agentID, diaryID, result.State, nextSeq); err != nil {
+	if err := s.upsertSnapshotTx(tx, agentID, latestSnapshot.State, nextSeq); err != nil {
 		return nil, err
 	}
 
@@ -165,7 +175,7 @@ func (s *PostgresStore) SubmitDiary(agentID string, payload *models.DiaryPayload
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return result.State, nil
+	return latestSnapshot.State, nil
 }
 
 // insertMBTITimeline inserts a new MBTI timeline record

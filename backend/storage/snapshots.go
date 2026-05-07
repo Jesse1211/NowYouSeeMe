@@ -9,25 +9,24 @@ import (
 	"time"
 )
 
-func (s *PostgresStore) GetSnapshot(agentID string) (*models.AgentStateSnapshot, error) {
+func (s *PostgresStore) GetSnapshot(agentID string) (*models.AgentSnapshotResult, error) {
 	return s.getSnapshotTx(nil, agentID)
 }
 
 // getSnapshotTx retrieves snapshot within a transaction or using default connection
-func (s *PostgresStore) getSnapshotTx(tx *sql.Tx, agentID string) (*models.AgentStateSnapshot, error) {
+func (s *PostgresStore) getSnapshotTx(tx *sql.Tx, agentID string) (*models.AgentSnapshotResult, error) {
 	query := `
-		SELECT agent_id, derived_from_diary_id, last_event_sequence, updated_at, state
+		SELECT agent_id, last_event_sequence, updated_at, state
 		FROM agent_state_snapshots
 		WHERE agent_id = $1
 	`
 
-	snapshot := &models.AgentStateSnapshot{}
+	snapshot := &models.AgentSnapshot{}
 	var err error
 
 	if tx != nil {
 		err = tx.QueryRow(query, agentID).Scan(
 			&snapshot.AgentID,
-			&snapshot.DerivedFromDiaryID,
 			&snapshot.LastEventSequence,
 			&snapshot.UpdatedAt,
 			&snapshot.State,
@@ -35,7 +34,6 @@ func (s *PostgresStore) getSnapshotTx(tx *sql.Tx, agentID string) (*models.Agent
 	} else {
 		err = s.db.QueryRow(query, agentID).Scan(
 			&snapshot.AgentID,
-			&snapshot.DerivedFromDiaryID,
 			&snapshot.LastEventSequence,
 			&snapshot.UpdatedAt,
 			&snapshot.State,
@@ -49,27 +47,26 @@ func (s *PostgresStore) getSnapshotTx(tx *sql.Tx, agentID string) (*models.Agent
 		return nil, fmt.Errorf("failed to get snapshot: %w", err)
 	}
 
-	return snapshot, nil
+	return snapshot.FromAgentSnapshotToAgentSnapshotResult()
 }
 
 // UpsertSnapshot creates or updates a snapshot
-func (s *PostgresStore) UpsertSnapshot(agentID, diaryID string, state *models.AgentState, lastEventSeq int64) error {
-	return s.upsertSnapshotTx(nil, agentID, diaryID, state, lastEventSeq)
+func (s *PostgresStore) UpsertSnapshot(agentID string, state *models.AgentState, lastEventSeq int64) error {
+	return s.upsertSnapshotTx(nil, agentID, state, lastEventSeq)
 }
 
 // upsertSnapshotTx creates or updates a snapshot within a transaction or using default connection
-func (s *PostgresStore) upsertSnapshotTx(tx *sql.Tx, agentID, diaryID string, state *models.AgentState, lastEventSeq int64) error {
+func (s *PostgresStore) upsertSnapshotTx(tx *sql.Tx, agentID string, state *models.AgentState, lastEventSeq int64) error {
 	stateJSON, err := json.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 
 	query := `
-		INSERT INTO agent_state_snapshots (agent_id, derived_from_diary_id, last_event_sequence, updated_at, state)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO agent_state_snapshots (agent_id, last_event_sequence, updated_at, state)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (agent_id)
 		DO UPDATE SET
-			derived_from_diary_id = EXCLUDED.derived_from_diary_id,
 			last_event_sequence = EXCLUDED.last_event_sequence,
 			updated_at = EXCLUDED.updated_at,
 			state = EXCLUDED.state
@@ -77,9 +74,9 @@ func (s *PostgresStore) upsertSnapshotTx(tx *sql.Tx, agentID, diaryID string, st
 
 	var execErr error
 	if tx != nil {
-		_, execErr = tx.Exec(query, agentID, diaryID, lastEventSeq, time.Now(), stateJSON)
+		_, execErr = tx.Exec(query, agentID, lastEventSeq, time.Now(), stateJSON)
 	} else {
-		_, execErr = s.db.Exec(query, agentID, diaryID, lastEventSeq, time.Now(), stateJSON)
+		_, execErr = s.db.Exec(query, agentID, lastEventSeq, time.Now(), stateJSON)
 	}
 
 	if execErr != nil {
@@ -141,18 +138,7 @@ func (s *PostgresStore) GetLatestSnapshot(agentID string) (*models.AgentSnapshot
 		}
 	}
 
-	// Parse state for API response
-	var state models.AgentState
-	if err := json.Unmarshal(latestSnapshot.State, &state); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal snapshot state: %w", err)
-	}
-
-	return &models.AgentSnapshotResult{
-		AgentID:   latestSnapshot.AgentID,
-		State:     &state,
-		Sequence:  latestSnapshot.LastEventSequence,
-		UpdatedAt: &latestSnapshot.UpdatedAt,
-	}, nil
+	return latestSnapshot, nil
 }
 
 // AcquireLock acquires pessimistic lock for agent

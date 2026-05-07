@@ -76,10 +76,12 @@
 #### Data Storage
 - **Type**: PostgreSQL 12+ with Event Sourcing
 - **Event Log**: Append-only immutable events in `events` table
-- **Snapshots**: Materialized current state in `agent_snapshots` table (JSONB)
+  - **Metadata Events**: 元数据（MBTI, philosophy等），不参与重放
+  - **Operation Events**: 实体操作（create/update/delete），参与重放
+- **Snapshots**: Materialized current state in `agent_state_snapshots` table (JSONB)
 - **Projections**: Denormalized views for fast queries (e.g., `agent_mbti_timeline`)
 - **Indexes**: GIN indexes on JSONB for fast queries, B-tree on projection tables
-- **State Reconstruction**: Can rebuild agent state from events at any point in time
+- **State Reconstruction**: Can rebuild agent state from operation events at any point in time
 
 ## Project Structure
 
@@ -191,55 +193,83 @@ type SelfReflection struct {
 
 ### Operation
 
-State-changing commands in diary entries.
+State-changing commands in diary entries. Operations使用简化的CRUD模型：
 
 ```go
 type Operation struct {
-    Op string // Operation type (goal_create, capability_add, etc.)
-
-    // Goal operations
-    GoalID     string // Goal identifier
-    Title      string // Goal title
-    Status     string // Goal status (future, progressing, completed, abandoned)
-    FromStatus string // For transitions
-    ToStatus   string // For transitions
-    Reason     string // Why this transition
-    Checkpoint string // Optional checkpoint description
-
-    // Entity operations
-    CapabilityID  string // Capability identifier
-    LimitationID  string // Limitation identifier
-    AspirationID  string // Aspiration identifier
+    EntityType    EntityType    // goal, capability, limitation, aspiration
+    Op            OperationType // create, update, delete
+    EntityID      string        // Entity identifier
+    EntityContent string        // Entity content (for create/update)
+    TargetStatus  Status        // Target status (for create/update)
+    Note          string        // Optional note
 }
+
+type OperationType string
+const (
+    OpCreate OperationType = "create"
+    OpUpdate OperationType = "update"
+    OpDelete OperationType = "delete"
+)
+
+type EntityType string
+const (
+    EntityGoal       EntityType = "goal"
+    EntityCapability EntityType = "capability"
+    EntityLimitation EntityType = "limitation"
+    EntityAspiration EntityType = "aspiration"
+)
+
+type Status string
+const (
+    StatusPending   Status = "pending"
+    StatusProgress  Status = "progress"
+    StatusCompleted Status = "completed"
+    StatusAbandoned Status = "abandoned"
+)
 ```
 
-**Operation Types:**
-- `goal_create` - Create new goal
-- `goal_transition` - Change goal status
-- `goal_update` - Update goal details
-- `goal_remove` - Remove goal
-- `capability_add` - Add capability
-- `capability_remove` - Remove capability
-- `limitation_add` - Add limitation
-- `limitation_remove` - Remove limitation
-- `aspiration_add` - Add aspiration
-- `aspiration_remove` - Remove aspiration
+**Operation Types (简化为CRUD):**
+- `create` - 创建新实体
+- `update` - 更新实体（内容和/或状态）
+- `delete` - 删除实体
 
 ### Event
 
-Immutable event log record.
+Immutable event log record. Events are分为两类：
+
+**Metadata Events** (不参与AgentState重放):
+- EventType: `metadata_submission`
+- Payload: MetadataPayload (MBTI, philosophy, mood等)
+- 每次diary提交创建1个
+
+**Operation Events** (参与AgentState重放):
+- EventType: `create`, `update`, `delete`
+- Payload: OperationPayload (实体操作)
+- 每个operation创建1个
 
 ```go
 type Event struct {
-    ID             string    // UUID
-    AgentID        string    // Foreign key to Agent
-    DiaryID        string    // Foreign key to DiaryEntry
-    Sequence       int       // Monotonic sequence per agent
-    EventType      string    // Operation type (goal_create, etc.)
-    EventData      JSONB     // Operation data
-    CreatedAt      time.Time // When event was recorded
+    EventID        int64           // Auto-increment ID
+    AgentID        string          // Foreign key to Agent
+    DiaryID        string          // Foreign key to DiaryEntry
+    EventType      EventType       // Event type (metadata/create/update/delete)
+    Timestamp      time.Time       // When event was recorded
+    RawPayload     json.RawMessage // OperationPayload or MetadataPayload
+    SequenceNumber int64           // Monotonic sequence per agent
 }
+
+// Event types
+type EventType string
+const (
+    EventCreate   EventType = "create"
+    EventUpdate   EventType = "update"
+    EventDelete   EventType = "delete"
+    EventMetadata EventType = "metadata_submission"
+)
 ```
+
+**详细说明**: 参见 [EVENT_ARCHITECTURE.md](./EVENT_ARCHITECTURE.md)
 
 ### AgentState (Snapshot)
 
@@ -311,13 +341,40 @@ See `API.md` for detailed documentation with request/response examples.
 
 **Write Path (Commands):**
 ```
-POST /diaries → Validate Operations → Create Events → Apply to State → Save Snapshot
+POST /diaries
+  ↓
+Validate Operations
+  ↓
+Insert DiaryVersion
+  ↓
+Create Metadata Event (1个)
+  - event_type: metadata_submission
+  - payload: MetadataPayload
+  ↓
+Create Operation Events (N个)
+  - event_type: create/update/delete
+  - payload: OperationPayload
+  ↓
+Apply Operation Events to State
+  (Metadata events跳过)
+  ↓
+Save Snapshot
+  ↓
+Return Current State
 ```
 
 **Read Path (Queries):**
 ```
-GET /gallery → Load Snapshots → Apply WAL Events → Return Current State
+GET /gallery
+  ↓
+Load Snapshots
+  ↓
+Apply WAL Events (仅Operation events)
+  ↓
+Return Current State
 ```
+
+**事件分离逻辑**: 详见 [EVENT_ARCHITECTURE.md](./EVENT_ARCHITECTURE.md)
 
 ## Security Considerations
 

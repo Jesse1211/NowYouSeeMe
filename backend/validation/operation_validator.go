@@ -15,18 +15,18 @@ func (e *ValidationError) Error() string {
 }
 
 // ValidateOperations validates operations against current state
-func ValidateOperations(operations []models.Operation, latestState *models.AgentState) error {
+func ValidateOperations(operations []models.Operation, latestSnapshotState *models.AgentState) error {
 	errors := []string{}
-	tempState := cloneState(latestState)
+	tempSnapshotState := cloneState(latestSnapshotState)
 
 	for i, op := range operations {
-		if err := validateOperation(op, tempState); err != nil {
+		if err := validateOperation(op, tempSnapshotState); err != nil {
 			errors = append(errors, fmt.Sprintf("operation[%d]: %s", i, err.Error()))
 			continue
 		}
 
 		// Apply operation to temp state for subsequent validations
-		applyOperationToState(op, tempState)
+		applyOperationToState(op, tempSnapshotState)
 	}
 
 	if len(errors) > 0 {

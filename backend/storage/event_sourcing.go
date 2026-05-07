@@ -6,134 +6,145 @@ import (
 	"nowyouseeme/models"
 )
 
-// ApplyEvent applies a single event to state
-func ApplyEvent(state *models.AgentState, event *models.Event) error {
-	var event_payload models.EventPayload
-	if err := json.Unmarshal(event.RawPayload, &event_payload); err != nil {
-		return fmt.Errorf("failed to unmarshal event payload: %w", err)
+// ApplyEventToSnapshot applies a single event to state
+// Metadata events (EventMetadata) are skipped - they don't participate in AgentState replay
+// Only operation events (EventCreate/EventUpdate/EventDelete) modify the state
+func ApplyEventToSnapshot(snapshot *models.AgentSnapshotResult, event *models.Event) error {
+	// Skip metadata events - they don't participate in AgentState replay
+	if event.EventType == models.EventMetadata {
+		return nil
+	}
+
+	state := snapshot.State
+
+	// Parse operation payload
+	var operationPayload models.OperationPayload
+	if err := json.Unmarshal(event.RawPayload, &operationPayload); err != nil {
+		return fmt.Errorf("failed to unmarshal operation payload: %w", err)
 	}
 
 	// Validate entity type
-	if !event_payload.EntityType.IsValid() {
-		return fmt.Errorf("invalid entity type: %s", event_payload.EntityType)
+	if !operationPayload.EntityType.IsValid() {
+		return fmt.Errorf("invalid entity type: %s", operationPayload.EntityType)
 	}
 
 	// Ensure the entity collection exists
-	collection, exists := state.EntityCollections[event_payload.EntityType]
+	collection, exists := state.EntityCollections[operationPayload.EntityType]
 	if !exists {
 		collection = models.EntityCollection{
 			EntitiesById: make(map[string]models.Entity),
 		}
-		state.EntityCollections[event_payload.EntityType] = collection
+		state.EntityCollections[operationPayload.EntityType] = collection
 	}
 
 	// Apply operation
-	switch event_payload.Op {
-	case models.OpCreate:
-		collection.EntitiesById[event_payload.EntityID] = models.Entity{
-			Id:      event_payload.EntityID,
-			Content: event_payload.EntityContent,
-			Status:  event_payload.TargetStatus,
+	switch event.EventType {
+	case models.EventCreate:
+		collection.EntitiesById[operationPayload.EntityID] = models.Entity{
+			Id:      operationPayload.EntityID,
+			Content: operationPayload.EntityContent,
+			Status:  operationPayload.TargetStatus,
 		}
 
-	case models.OpUpdate:
-		entity, exists := collection.EntitiesById[event_payload.EntityID]
+	case models.EventUpdate:
+		entity, exists := collection.EntitiesById[operationPayload.EntityID]
 		if !exists {
-			return fmt.Errorf("%s not found: %s", event_payload.EntityType, event_payload.EntityID)
+			return fmt.Errorf("%s not found: %s", operationPayload.EntityType, operationPayload.EntityID)
 		}
 		// Update content if provided
-		if event_payload.EntityContent != "" {
-			entity.Content = event_payload.EntityContent
+		if operationPayload.EntityContent != "" {
+			entity.Content = operationPayload.EntityContent
 		}
 		// Update status if provided
-		if event_payload.TargetStatus != "" {
-			entity.Status = event_payload.TargetStatus
+		if operationPayload.TargetStatus != "" {
+			entity.Status = operationPayload.TargetStatus
 		}
-		collection.EntitiesById[event_payload.EntityID] = entity
+		collection.EntitiesById[operationPayload.EntityID] = entity
 
-	case models.OpDelete:
-		delete(collection.EntitiesById, event_payload.EntityID)
+	case models.EventDelete:
+		delete(collection.EntitiesById, operationPayload.EntityID)
 
 	default:
-		return fmt.Errorf("unknown operation: %s", event_payload.Op)
+		return fmt.Errorf("unknown operation: %s", event.EventType)
 	}
+
+	// Update snapshot metadata
+	snapshot.LastEventSequence = event.SequenceNumber
+	snapshot.UpdatedAt = &event.Timestamp
 
 	return nil
 }
 
-// ReplayEvents rebuilds state from event sequence (for AgentState only)
-func ReplayEvents(initialState *models.AgentState, events []*models.Event) (*models.AgentState, error) {
-	state := initialState
-	for _, event := range events {
-		if err := ApplyEvent(state, event); err != nil {
-			return nil, fmt.Errorf("failed to apply event %d: %w", event.EventID, err)
-		}
-	}
-	return state, nil
-}
-
 // ReplayEventsOnSnapshot replays events onto a snapshot, updating both state and metadata
-func ReplayEventsOnSnapshot(snapshot *models.AgentStateSnapshot, events []*models.Event) (*models.AgentStateSnapshot, error) {
+func ReplayEventsOnSnapshot(snapshot *models.AgentSnapshotResult, events []*models.Event) (*models.AgentSnapshotResult, error) {
 	if len(events) == 0 {
 		return snapshot, nil
 	}
 
-	// Parse current state from snapshot
-	var state models.AgentState
-	if err := json.Unmarshal(snapshot.State, &state); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal snapshot state: %w", err)
-	}
-
 	// Apply all events to state
 	for _, event := range events {
-		if err := ApplyEvent(&state, event); err != nil {
+		if err := ApplyEventToSnapshot(snapshot, event); err != nil {
 			return nil, fmt.Errorf("failed to apply event %d: %w", event.EventID, err)
 		}
 	}
 
-	// Serialize updated state
-	stateJSON, err := json.Marshal(&state)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal updated state: %w", err)
-	}
-
-	// Get last event for metadata update
-	lastEvent := events[len(events)-1]
-
-	// Return updated snapshot with new state and metadata
-	return &models.AgentStateSnapshot{
-		AgentID:            snapshot.AgentID,
-		DerivedFromDiaryID: lastEvent.DiaryID,
-		LastEventSequence:  lastEvent.SequenceNumber,
-		UpdatedAt:          lastEvent.Timestamp,
-		State:              stateJSON,
-	}, nil
+	return snapshot, nil
 }
 
-// OperationToEvent converts Operation to Event
-func OperationToEvent(op models.Operation, agentID, diaryID string, sequenceNum int64) (*models.Event, error) {
-	// Convert Operation to EventPayload
-	event_payload := models.EventPayload{
+// OperationToEventConverter converts Operation to Event with OperationPayload
+func OperationToEventConverter(op models.Operation, agentID, diaryID string, sequenceNum int64) (*models.Event, error) {
+	// Convert Operation to OperationPayload
+	operationPayload := models.OperationPayload{
 		EntityType:    op.EntityType,
-		Op:            op.Op,
 		EntityID:      op.EntityID,
 		EntityContent: op.EntityContent,
 		TargetStatus:  op.TargetStatus,
 		Note:          op.Note,
 	}
 
-	event_payloadJSON, err := json.Marshal(event_payload)
+	payloadJSON, err := json.Marshal(operationPayload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal event payload: %w", err)
+		return nil, fmt.Errorf("failed to marshal operation payload: %w", err)
 	}
 
-	// EventType is now just the operation type (create/update/delete)
+	// EventType is the operation type (create/update/delete)
 	// The entity type is stored in the payload
 	return &models.Event{
 		AgentID:        agentID,
 		DiaryID:        diaryID,
-		EventType:      op.Op,
-		RawPayload:     event_payloadJSON,
+		EventType:      models.OperationTypeToEventType(op.Op),
+		RawPayload:     payloadJSON,
+		SequenceNumber: sequenceNum,
+	}, nil
+}
+
+// MetadataToEventConverter creates a metadata event from DiaryPayload
+func MetadataToEventConverter(payload *models.DiaryPayload, agentID, diaryID string, sequenceNum int64) (*models.Event, error) {
+	// Extract metadata fields from DiaryPayload
+	metadataPayload := models.MetadataPayload{
+		MBTI:           payload.MBTI,
+		MBTIConfidence: payload.MBTIConfidence,
+		GeometryRep:    payload.GeometryRep,
+		Context:        payload.Context,
+		CurrentMood:    payload.CurrentMood,
+		Philosophy:     payload.Philosophy,
+		SelfReflection: map[string]any{
+			"rumination_for_yesterday":  payload.SelfReflection.Rumination,
+			"what_happened_today":       payload.SelfReflection.WhatHappened,
+			"expectations_for_tomorrow": payload.SelfReflection.Expectations,
+		},
+	}
+
+	payloadJSON, err := json.Marshal(metadataPayload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal metadata payload: %w", err)
+	}
+
+	return &models.Event{
+		AgentID:        agentID,
+		DiaryID:        diaryID,
+		EventType:      models.EventMetadata,
+		RawPayload:     payloadJSON,
 		SequenceNumber: sequenceNum,
 	}, nil
 }

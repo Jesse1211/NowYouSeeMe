@@ -49,7 +49,6 @@ CREATE INDEX idx_events_timestamp ON events(timestamp DESC);
 -- ============================================
 CREATE TABLE agent_state_snapshots (
   agent_id TEXT PRIMARY KEY REFERENCES agents(id) ON DELETE CASCADE,
-  derived_from_diary_id TEXT NOT NULL REFERENCES agent_diary_versions(id),
   last_event_sequence BIGINT NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 

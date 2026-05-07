@@ -148,3 +148,8 @@ func (s *PostgresStore) GetEventsByAgent(agentID string) ([]*models.Event, error
 
 	return events, nil
 }
+
+// GetEventsByAgentID is an alias for GetEventsByAgent
+func (s *PostgresStore) GetEventsByAgentID(agentID string) ([]*models.Event, error) {
+	return s.GetEventsByAgent(agentID)
+}

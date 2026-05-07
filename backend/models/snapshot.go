@@ -6,13 +6,26 @@ import (
 	"time"
 )
 
-// AgentStateSnapshot represents materialized current state
-type AgentStateSnapshot struct {
-	AgentID            string          `json:"agent_id"`
-	DerivedFromDiaryID string          `json:"derived_from_diary_id"`
-	LastEventSequence  int64           `json:"last_event_sequence"`
-	UpdatedAt          time.Time       `json:"updated_at"`
-	State              json.RawMessage `json:"state"`
+// AgentSnapshot represents materialized current state
+type AgentSnapshot struct {
+	AgentID           string          `json:"agent_id"`
+	LastEventSequence int64           `json:"last_event_sequence"`
+	UpdatedAt         time.Time       `json:"updated_at"`
+	State             json.RawMessage `json:"state"`
+}
+
+func (r *AgentSnapshot) FromAgentSnapshotToAgentSnapshotResult() (*AgentSnapshotResult, error) {
+	var state AgentState
+	if err := json.Unmarshal(r.State, &state); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal snapshot state: %w", err)
+	}
+
+	return &AgentSnapshotResult{
+		AgentID:           r.AgentID,
+		LastEventSequence: r.LastEventSequence,
+		UpdatedAt:         &r.UpdatedAt,
+		State:             &state,
+	}, nil
 }
 
 // AgentState represents the JSONB state structure
@@ -53,10 +66,10 @@ func NewEmptyState() *AgentState {
 // AgentSnapshotResult encapsulates the complete snapshot information
 // following DDD principles - a rich domain object
 type AgentSnapshotResult struct {
-	AgentID   string      `json:"agent_id"`
-	State     *AgentState `json:"state"`
-	Sequence  int64       `json:"sequence"`
-	UpdatedAt *time.Time  `json:"updated_at,omitempty"`
+	AgentID           string      `json:"agent_id"`
+	LastEventSequence int64       `json:"sequence"`
+	UpdatedAt         *time.Time  `json:"updated_at,omitempty"`
+	State             *AgentState `json:"state"`
 }
 
 // HasSnapshot returns true if this result contains a valid snapshot

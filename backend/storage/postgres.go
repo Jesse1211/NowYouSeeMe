@@ -13,3 +13,8 @@ type PostgresStore struct {
 func NewPostgresStore(db *sql.DB) *PostgresStore {
 	return &PostgresStore{db: db}
 }
+
+// GetDB returns the underlying database connection (for testing purposes)
+func (s *PostgresStore) GetDB() *sql.DB {
+	return s.db
+}
