@@ -46,7 +46,7 @@ func GetGallery(store *storage.PostgresStore) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{
 			"snapshots": results,
-			"total":  len(results),
+			"total":     len(results),
 		})
 	}
 }
@@ -115,9 +115,9 @@ func GetSnapshotsByMBTI(store *storage.PostgresStore) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"mbti":   mbtiType,
+			"mbti":      mbtiType,
 			"snapshots": results,
-			"count":  len(results),
+			"count":     len(results),
 		})
 	}
 }
@@ -144,11 +144,11 @@ func GetTimeline(store *storage.PostgresStore) gin.HandlerFunc {
 		}
 
 		type EventResponse struct {
-			EventID        int64                  `json:"event_id"`
-			SequenceNumber int64                  `json:"sequence_number"`
-			EventType      models.EventType       `json:"event_type"`
-			Timestamp      string                 `json:"timestamp"`
-			RawPayload     map[string]any         `json:"raw_payload"`
+			EventID        int64            `json:"event_id"`
+			SequenceNumber int64            `json:"sequence_number"`
+			EventType      models.EventType `json:"event_type"`
+			Timestamp      string           `json:"timestamp"`
+			RawPayload     map[string]any   `json:"raw_payload"`
 		}
 
 		results := []EventResponse{}

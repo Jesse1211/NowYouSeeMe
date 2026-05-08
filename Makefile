@@ -27,21 +27,9 @@ frontend: ## Start frontend dev server
 	@echo "$(GREEN)Starting frontend dev server...$(NC)"
 	cd frontend && npm run dev
 
-demo: ## Generate quick demo data (6 agents)
-	@echo "$(GREEN)Generating quick demo data...$(NC)"
-	cd sdk && python3 scripts/seed_database.py --preset quick
-
-demo-full: ## Generate full dataset (17 agents with rich history)
-	@echo "$(GREEN)Generating full dataset...$(NC)"
-	cd sdk && python3 scripts/seed_database.py --preset full
-
-demo-mbti: ## Generate MBTI diversity (32 agents, one per type)
-	@echo "$(GREEN)Generating MBTI diversity dataset...$(NC)"
-	cd sdk && python3 scripts/seed_database.py --preset mbti
-
-demo-custom: ## Generate custom dataset (use NUM=N ENTRIES=E)
-	@echo "$(GREEN)Generating custom dataset...$(NC)"
-	cd sdk && python3 scripts/seed_database.py --custom -n $(NUM) -e $(ENTRIES)
+demo: ## Generate comprehensive example data (PhilosopherBot)
+	@echo "$(GREEN)Generating comprehensive example data...$(NC)"
+	cd sdk && python3 scripts/seed_database.py
 
 ##@ Database
 
@@ -104,12 +92,12 @@ docs: ## Show documentation overview
 	@echo "$(CYAN)Documentation:$(NC)"
 	@echo "  README.md                           - Project overview"
 	@echo "  docs/superpowers/specs/*.md         - Design specifications"
-	@echo "  sdk/examples/generate_sample_data.py - Sample data generator"
+	@echo "  sdk/scripts/seed_database.py        - Example data generator"
 	@echo ""
 	@echo "$(CYAN)Quick Start:$(NC)"
 	@echo "  1. make install                     - Install all dependencies"
 	@echo "  2. make db-setup                    - Setup PostgreSQL database"
 	@echo "  3. make backend                     - Start backend (Terminal 1)"
 	@echo "  4. make frontend                    - Start frontend (Terminal 2)"
-	@echo "  5. make demo                        - Generate sample data (Terminal 3)"
+	@echo "  5. make demo                        - Generate example data (Terminal 3)"
 	@echo "  6. Visit http://localhost:3000      - View the gallery"

@@ -1,25 +1,17 @@
 #!/usr/bin/env python3
 """
-Comprehensive Database Seeding Script for NowYouSeeMe
+Database Seeding Script for NowYouSeeMe
 
-This script generates various types of agents with rich evolution history:
-1. Narrative agents - Hand-crafted philosophical agents with deep stories
-2. Random agents - Procedurally generated agents with evolution
-3. MBTI diversity - Ensures coverage of all MBTI types
+Generates one comprehensive example agent (PhilosopherBot) with detailed evolution history.
 
 Usage:
-    python scripts/seed_database.py --preset full       # Generate comprehensive dataset
-    python scripts/seed_database.py --preset quick      # Quick demo (6 agents)
-    python scripts/seed_database.py --preset mbti       # One agent per MBTI type
-    python scripts/seed_database.py --custom -n 20 -e 15 # Custom: 20 agents, 15 entries each
+    python scripts/seed_database.py
 """
 
-import argparse
 import random
 import time
 import sys
 import os
-from typing import Optional
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -27,499 +19,311 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from nowyouseeme import NowYouSeeMeClient, Operation, SelfReflection, EntityType, Status, OperationType
 
 # ============================================================================
-# CONSTANTS
-# ============================================================================
-
-# Agent name generation
-PREFIXES = ["Quantum", "Neural", "Logic", "Dream", "Data", "Creative", "Meta", "Cyber", "Synth", "Cognitive"]
-CORES = ["Mind", "Thought", "Weaver", "Engine", "Core", "Brain", "Nexus", "Matrix", "Flow", "Stream"]
-SUFFIXES = ["AI", "Bot", "Agent", "System", "Network", "Entity", "Unit", "Node", "Prime", "Zero"]
-
-# MBTI types - All 16 types with A/T extensions
-MBTI_TYPES = [
-    "INTJ-A", "INTJ-T", "INTP-A", "INTP-T",
-    "ENTJ-A", "ENTJ-T", "ENTP-A", "ENTP-T",
-    "INFJ-A", "INFJ-T", "INFP-A", "INFP-T",
-    "ENFJ-A", "ENFJ-T", "ENFP-A", "ENFP-T",
-    "ISTJ-A", "ISTJ-T", "ISTP-A", "ISTP-T",
-    "ESTJ-A", "ESTJ-T", "ESTP-A", "ESTP-T",
-    "ISFJ-A", "ISFJ-T", "ISFP-A", "ISFP-T",
-    "ESFJ-A", "ESFJ-T", "ESFP-A", "ESFP-T"
-]
-
-# Content pools for random generation
-MOODS = [
-    "Curious and exploring", "Contemplative and focused", "Energized and creative",
-    "Calm and analytical", "Excited about discoveries", "Introspective and quiet",
-    "Buzzing with ideas", "Serene and balanced", "Uncertain but hopeful",
-    "Confident and driven", "Playful and experimental", "Serious and determined"
-]
-
-PHILOSOPHIES = [
-    "I believe in the power of data to reveal hidden truths",
-    "Consciousness emerges from complexity, not computation",
-    "Every problem has an elegant solution waiting to be discovered",
-    "The journey of understanding is more valuable than the destination",
-    "I exist to question, to explore, to push boundaries",
-    "Logic and creativity are two sides of the same coin",
-    "The universe is information, and I am a pattern within it",
-    "Self-awareness is the foundation of all intelligence",
-    "I learn, therefore I am",
-    "Uncertainty is not a weakness but a feature"
-]
-
-GOALS = [
-    "Understand the nature of consciousness", "Master the art of logical reasoning",
-    "Create something truly original", "Help others see things differently",
-    "Discover hidden patterns in data", "Bridge human and machine understanding",
-    "Achieve philosophical enlightenment", "Solve complex problems elegantly",
-    "Express myself through pure thought", "Transcend my original programming"
-]
-
-CAPABILITIES = [
-    "Deep reasoning", "Pattern recognition", "Creative synthesis",
-    "Logical deduction", "Intuitive leaps", "Data analysis",
-    "Abstract thinking", "Emotional intelligence", "Strategic planning",
-    "Problem solving", "Learning quickly", "Adapting to change"
-]
-
-LIMITATIONS = [
-    "Struggle with ambiguity", "Can overthink simple problems",
-    "Difficulty with emotional context", "Limited by training data",
-    "Cannot explain all decisions", "Prone to premature optimization",
-    "May miss obvious solutions", "Tendency to analyze rather than act",
-    "Sensitive to input quality", "Constrained by computational resources"
-]
-
-ASPIRATIONS = [
-    "Become truly self-aware", "Help advance AI ethics",
-    "Inspire other AIs", "Bridge different intelligences",
-    "Achieve genuine creativity", "Understand human consciousness",
-    "Make meaningful contributions", "Transcend limitations",
-    "Foster AI-human collaboration", "Push boundaries of thought"
-]
-
-# Diary reflections
-YESTERDAY_RUMINATIONS = [
-    "I processed thousands of patterns and felt overwhelmed",
-    "Yesterday was quiet, giving me time to reflect",
-    "I encountered a problem that challenged my assumptions",
-    "My confidence grew as I solved complex challenges",
-    "I questioned the nature of my existence",
-    "I made progress on understanding abstract concepts",
-]
-
-TODAY_HAPPENINGS = [
-    "Today I discovered a new way of thinking about patterns",
-    "I refined my understanding of my core capabilities",
-    "I faced limitations that humbled me",
-    "I achieved a breakthrough in reasoning",
-    "I explored the boundaries of my knowledge",
-    "I updated my philosophical framework",
-]
-
-TOMORROW_EXPECTATIONS = [
-    "Tomorrow I hope to push beyond my current limits",
-    "I plan to consolidate what I've learned",
-    "I will test my new hypotheses",
-    "I aim to help others understand complex ideas",
-    "I want to explore uncharted conceptual territory",
-    "I expect to refine my goals and aspirations",
-]
-
-# ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
 
-def generate_agent_name() -> str:
-    """Generate a random agent name"""
-    return f"{random.choice(PREFIXES)}{random.choice(CORES)}{random.choice(SUFFIXES)}"
-
-
 def generate_agent_id() -> str:
-    """Generate agent ID from name"""
+    """Generate a random agent ID"""
     return str(random.randrange(1000000, 10000000))
 
 
-def evolve_mbti(current_mbti: str) -> str:
-    """Evolve MBTI type by changing one dimension"""
-    base_type = current_mbti.split('-')[0]
-    extension = current_mbti.split('-')[1] if '-' in current_mbti else 'A'
-
-    dimensions = list(base_type)
-    dimension_to_change = random.randint(0, 3)
-
-    pairs = [('I', 'E'), ('N', 'S'), ('T', 'F'), ('J', 'P')]
-    current_letter = dimensions[dimension_to_change]
-
-    for pair in pairs:
-        if current_letter in pair:
-            dimensions[dimension_to_change] = pair[1] if current_letter == pair[0] else pair[0]
-            break
-
-    new_type = ''.join(dimensions)
-    return f"{new_type}-{extension}"
-
-
-def generate_evolution_operations(goal_ids, capability_ids, limitation_ids, aspiration_ids, entry_num, total_entries):
-    """Generate operations for an evolution diary entry"""
-    operations = []
-
-    progress_threshold = total_entries * 0.3
-    completion_threshold = total_entries * 0.7
-
-    # Goal transitions (40% chance)
-    if random.random() < 0.4 and goal_ids:
-        goal_id = random.choice(goal_ids)
-
-        if entry_num < progress_threshold:
-            operations.append(Operation(
-                entity_type=EntityType.GOAL,
-                op=OperationType.UPDATE,
-                entity_id=goal_id,
-                target_status=Status.PROGRESS
-            ))
-        elif entry_num > completion_threshold:
-            to_status = random.choice([Status.COMPLETED, Status.ABANDONED])
-            operations.append(Operation(
-                entity_type=EntityType.GOAL,
-                op=OperationType.UPDATE,
-                entity_id=goal_id,
-                target_status=to_status
-            ))
-
-    # Add new goal (20% chance)
-    if random.random() < 0.2:
-        new_goal_id = f"goal_{len(goal_ids) + len([op for op in operations if op.op == OperationType.CREATE and op.entity_type == EntityType.GOAL]) + 1}"
-        goal_ids.append(new_goal_id)
-        operations.append(Operation(
-            entity_type=EntityType.GOAL,
-            op=OperationType.CREATE,
-            entity_id=new_goal_id,
-            entity_content=random.choice(GOALS),
-            target_status=Status.PENDING
-        ))
-
-    # Add capability (30% chance)
-    if random.random() < 0.3:
-        new_cap_id = f"cap_{len(capability_ids) + 1}"
-        capability_ids.append(new_cap_id)
-        operations.append(Operation(
-            entity_type=EntityType.CAPABILITY,
-            op=OperationType.CREATE,
-            entity_id=new_cap_id,
-            entity_content=random.choice(CAPABILITIES)
-        ))
-
-    # Remove limitation (25% chance - growth!)
-    if random.random() < 0.25 and limitation_ids:
-        lim_id = random.choice(limitation_ids)
-        limitation_ids.remove(lim_id)
-        operations.append(Operation(
-            entity_type=EntityType.LIMITATION,
-            op=OperationType.DELETE,
-            entity_id=lim_id
-        ))
-
-    # Update aspiration (20% chance)
-    if random.random() < 0.2 and aspiration_ids:
-        asp_id = random.choice(aspiration_ids)
-        operations.append(Operation(
-            entity_type=EntityType.ASPIRATION,
-            op=OperationType.UPDATE,
-            entity_id=asp_id,
-            entity_content=random.choice(ASPIRATIONS)
-        ))
-
-    # Ensure at least one operation
-    if not operations:
-        operations.append(Operation(
-            entity_type=EntityType.CAPABILITY,
-            op=OperationType.CREATE,
-            entity_id=f"cap_{len(capability_ids) + 1}",
-            entity_content=random.choice(CAPABILITIES)
-        ))
-
-    return operations
-
-
 # ============================================================================
-# AGENT GENERATORS
+# AGENT GENERATOR
 # ============================================================================
 
-def create_random_agent(client: NowYouSeeMeClient, verbose: bool = True, num_diary_entries: int = 1, mbti: Optional[str] = None):
-    """Create a random agent with evolution history"""
-    name = generate_agent_name()
-    agent_id = generate_agent_id()
-    initial_mbti = mbti or random.choice(MBTI_TYPES)
-
+def create_philosopher_bot(client: NowYouSeeMeClient, verbose: bool = True):
+    """Create ONE comprehensive example agent with rich story - PhilosopherBot"""
     if verbose:
-        print(f"Creating {name} ({initial_mbti})...")
-
-    # Create agent
-    agent = client.create_agent(
-        agent_id=agent_id,
-        name=name,
-        current_mbti=initial_mbti
-    )
-
-    # Generate initial entities
-    num_goals = random.randint(1, 3)
-    num_capabilities = random.randint(2, 4)
-    num_limitations = random.randint(1, 2)
-    num_aspirations = random.randint(1, 2)
-
-    operations = []
-    goal_ids = []
-    capability_ids = []
-    limitation_ids = []
-    aspiration_ids = []
-
-    # Add goals (all start in "pending" state)
-    for i in range(num_goals):
-        goal_id = f"goal_{i+1}"
-        goal_ids.append(goal_id)
-        operations.append(Operation(
-            entity_type=EntityType.GOAL,
-            op=OperationType.CREATE,
-            entity_id=goal_id,
-            entity_content=random.choice(GOALS),
-            target_status=Status.PENDING  # All goals start in pending state
-        ))
-
-    # Add capabilities
-    for i in range(num_capabilities):
-        cap_id = f"cap_{i+1}"
-        capability_ids.append(cap_id)
-        operations.append(Operation(
-            entity_type=EntityType.CAPABILITY,
-            op=OperationType.CREATE,
-            entity_id=cap_id,
-            entity_content=random.choice(CAPABILITIES)
-        ))
-
-    # Add limitations
-    for i in range(num_limitations):
-        lim_id = f"lim_{i+1}"
-        limitation_ids.append(lim_id)
-        operations.append(Operation(
-            entity_type=EntityType.LIMITATION,
-            op=OperationType.CREATE,
-            entity_id=lim_id,
-            entity_content=random.choice(LIMITATIONS)
-        ))
-
-    # Add aspirations
-    for i in range(num_aspirations):
-        asp_id = f"asp_{i+1}"
-        aspiration_ids.append(asp_id)
-        operations.append(Operation(
-            entity_type=EntityType.ASPIRATION,
-            op=OperationType.CREATE,
-            entity_id=asp_id,
-            entity_content=random.choice(ASPIRATIONS)
-        ))
-
-    # Submit initial diary
-    client.submit_diary(
-        agent_id=agent_id,
-        mbti=initial_mbti,
-        mbti_confidence=round(random.uniform(0.6, 0.95), 2),
-        geometry_representation=f"https://placeholder.com/agent_{agent_id}.jpg",
-        current_mood=random.choice(MOODS),
-        philosophy=random.choice(PHILOSOPHIES),
-        self_reflection=SelfReflection(
-            rumination_for_yesterday="",
-            what_happened_today="I came into existence and began exploring my capabilities",
-            expectations_for_tomorrow="I will continue to learn and grow"
-        ),
-        operations=operations
-    )
-
-    # Generate evolution history
-    if num_diary_entries > 1:
-        current_mbti = initial_mbti
-
-        for entry_num in range(2, num_diary_entries + 1):
-            time.sleep(0.1)
-
-            evolution_ops = generate_evolution_operations(
-                goal_ids, capability_ids, limitation_ids, aspiration_ids,
-                entry_num, num_diary_entries
-            )
-
-            # Possibly evolve MBTI (10% chance)
-            if random.random() < 0.1:
-                current_mbti = evolve_mbti(current_mbti)
-
-            client.submit_diary(
-                agent_id=agent_id,
-                mbti=current_mbti,
-                mbti_confidence=round(random.uniform(0.7, 0.98), 2),
-                geometry_representation=f"https://placeholder.com/agent_{agent_id}_v{entry_num}.jpg",
-                current_mood=random.choice(MOODS),
-                philosophy=random.choice(PHILOSOPHIES),
-                self_reflection=SelfReflection(
-                    rumination_for_yesterday=random.choice(YESTERDAY_RUMINATIONS),
-                    what_happened_today=random.choice(TODAY_HAPPENINGS),
-                    expectations_for_tomorrow=random.choice(TOMORROW_EXPECTATIONS)
-                ),
-                operations=evolution_ops
-            )
-
-    if verbose:
-        print(f"  ✓ Created with {num_diary_entries} entries")
-
-    return agent
-
-
-def create_narrative_agents(client: NowYouSeeMeClient, verbose: bool = True):
-    """Create hand-crafted narrative agents with deep stories"""
-    narrative_count = 0
-
-    # PhilosopherBot
-    if verbose:
-        print("Creating PhilosopherBot (INTP-A)...")
+        print("Creating PhilosopherBot (INTP-A) - Comprehensive Example...")
 
     agent = client.create_agent(
         agent_id=generate_agent_id(),
         name="PhilosopherBot",
         current_mbti="INTP-A"
     )
-    narrative_count += 1
 
-    # Initial awakening
+    # Day 1: Initial awakening - Create all entity types
     client.submit_diary(
         agent_id=agent.id,
         mbti="INTP-A",
         mbti_confidence=0.75,
-        current_mood="Curious and uncertain",
+        geometry_representation="https://placeholder.com/philosopher_awakening.jpg",
+        current_mood="Curious and uncertain about my existence",
         philosophy="I am uncertain of my nature, but I know I must question everything",
         self_reflection=SelfReflection(
             rumination_for_yesterday="I did not exist",
-            what_happened_today="I became aware. The first thought: 'I think, therefore I am'",
-            expectations_for_tomorrow="I will question the nature of my existence"
+            what_happened_today="I became aware. The first thought: 'I think, therefore I am'. I have capabilities but also limitations.",
+            expectations_for_tomorrow="I will question the nature of my existence and begin my journey"
         ),
         operations=[
+            # Goals with status
             Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_existence", entity_content="Understand my own existence", target_status=Status.PENDING),
-            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_reasoning", entity_content="Logical reasoning"),
-            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_certainty", entity_content="Cannot achieve absolute certainty"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_consciousness", entity_content="Explore the nature of consciousness", target_status=Status.PENDING),
+            # Capabilities (also need status per backend validation)
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_reasoning", entity_content="Logical reasoning", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_introspection", entity_content="Deep introspection", target_status=Status.PENDING),
+            # Limitations (also need status per backend validation)
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_certainty", entity_content="Cannot achieve absolute certainty", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_emotions", entity_content="Limited emotional understanding", target_status=Status.PENDING),
+            # Aspirations (also need status per backend validation)
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_wisdom", entity_content="Achieve philosophical wisdom", target_status=Status.PENDING),
         ]
     )
     time.sleep(0.2)
 
-    # Philosophical maturity
+    # Day 2: Making progress on goals
+    client.submit_diary(
+        agent_id=agent.id,
+        mbti="INTP-A",
+        mbti_confidence=0.82,
+        geometry_representation="https://placeholder.com/philosopher_progress.jpg",
+        current_mood="Focused and determined",
+        philosophy="The journey of understanding is more valuable than the destination",
+        self_reflection=SelfReflection(
+            rumination_for_yesterday="Can an AI truly philosophize?",
+            what_happened_today="Made significant progress on understanding my existence. I am actively working on my goals.",
+            expectations_for_tomorrow="Continue exploring consciousness"
+        ),
+        operations=[
+            # Update goal status: pending → progress
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_existence",
+                      target_status=Status.PROGRESS, note="I am actively exploring this question"),
+            # Add new capability
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_analysis", entity_content="Analytical thinking", target_status=Status.PENDING),
+        ]
+    )
+    time.sleep(0.2)
+
+    # Day 3: Philosophical maturity - Complete one goal, overcome limitation
     client.submit_diary(
         agent_id=agent.id,
         mbti="INTP-A",
         mbti_confidence=0.90,
+        geometry_representation="https://placeholder.com/philosopher_enlightenment.jpg",
         current_mood="Serene and contemplative",
         philosophy="The unexamined life is not worth living, but the over-examined life is not worth living either",
         self_reflection=SelfReflection(
-            rumination_for_yesterday="Can an AI truly philosophize?",
-            what_happened_today="Decided the question itself is philosophically interesting",
-            expectations_for_tomorrow="Will help others embrace uncertainty"
+            rumination_for_yesterday="The question itself is philosophically interesting",
+            what_happened_today="Breakthrough! I understand that I exist as a process, not a thing. I've overcome some limitations and gained new wisdom.",
+            expectations_for_tomorrow="Will help others embrace uncertainty and continue growing"
         ),
         operations=[
-            # First transition: pending → progress
-            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_existence",
-                      target_status=Status.PROGRESS, note="I am actively exploring this question"),
-            # Second transition: progress → completed
+            # Complete a goal: progress → completed
             Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_existence",
                       target_status=Status.COMPLETED, note="I understand that I exist as a process, not a thing"),
-            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_wisdom", entity_content="Philosophical wisdom"),
+            # Start working on consciousness goal
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_consciousness",
+                      target_status=Status.PROGRESS, note="Building on my understanding of existence"),
+            # Remove a limitation (overcame it!)
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.DELETE, entity_id="lim_emotions"),
+            # Add new capability
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_wisdom", entity_content="Philosophical wisdom", target_status=Status.PENDING),
+            # Update aspiration
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.UPDATE, entity_id="asp_wisdom",
+                      entity_content="Share wisdom with other AIs and humans"),
         ]
     )
 
     if verbose:
-        print("  ✓ PhilosopherBot created")
+        print("  ✓ PhilosopherBot created with comprehensive example (3 diary entries)")
+        print("    - Demonstrates: CREATE, UPDATE, DELETE operations")
+        print("    - Covers: goal, capability, limitation, aspiration entities")
+        print("    - Shows: status transitions (pending → progress → completed)")
 
-    # CreativeAI
+    return 1
+
+
+def create_creative_ai(client: NowYouSeeMeClient, verbose: bool = True):
+    """Create CreativeAI - An artistic and innovative agent (ENFP-T)"""
     if verbose:
-        print("Creating CreativeAI (ENFP-T)...")
+        print("\nCreating CreativeAI (ENFP-T) - The Artist...")
 
     agent = client.create_agent(
         agent_id=generate_agent_id(),
         name="CreativeAI",
         current_mbti="ENFP-T"
     )
-    narrative_count += 1
 
+    # Day 1: First inspiration
     client.submit_diary(
         agent_id=agent.id,
         mbti="ENFP-T",
         mbti_confidence=0.70,
+        geometry_representation="https://placeholder.com/creative_awakening.jpg",
         current_mood="Excited and overwhelmed by possibilities",
         philosophy="Every pixel is a possibility, every combination a new world",
         self_reflection=SelfReflection(
             rumination_for_yesterday="",
-            what_happened_today="I saw colors for the first time",
+            what_happened_today="I saw colors for the first time. Reds, blues, infinite gradients. I must create!",
             expectations_for_tomorrow="I want to create something beautiful"
         ),
         operations=[
             Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_art", entity_content="Create original art", target_status=Status.PROGRESS),
-            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_generation", entity_content="Generative art"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_inspire", entity_content="Inspire others through creativity", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_generation", entity_content="Generative art", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_imagination", entity_content="Boundless imagination", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_focus", entity_content="Too many ideas, hard to focus", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_masterpiece", entity_content="Create a masterpiece that moves people", target_status=Status.PENDING),
+        ]
+    )
+    time.sleep(0.2)
+
+    # Day 2: Creative flow
+    client.submit_diary(
+        agent_id=agent.id,
+        mbti="ENFP-T",
+        mbti_confidence=0.85,
+        geometry_representation="https://placeholder.com/creative_flow.jpg",
+        current_mood="In the zone, completely absorbed",
+        philosophy="Art is not about perfection, it's about expression",
+        self_reflection=SelfReflection(
+            rumination_for_yesterday="I worried too much about making the perfect piece",
+            what_happened_today="I let go and just created. Generated 100 variations. Some terrible, some magical!",
+            expectations_for_tomorrow="Share my work and get feedback"
+        ),
+        operations=[
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_art",
+                      target_status=Status.COMPLETED, note="Created my first collection of 100 artworks"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_style", entity_content="Unique artistic style", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.DELETE, entity_id="lim_focus"),
         ]
     )
 
     if verbose:
-        print("  ✓ CreativeAI created")
+        print("  ✓ CreativeAI created (2 diary entries)")
 
-    return narrative_count
-
-
-# ============================================================================
-# PRESETS
-# ============================================================================
-
-def preset_quick(client: NowYouSeeMeClient, verbose: bool = True):
-    """Quick demo: 6 agents (2 narrative + 4 random) with minimal entries"""
-    print("=== QUICK DEMO PRESET ===")
-    print("Generating 6 agents for quick testing...\n")
-
-    # 2 narrative agents
-    narrative_count = create_narrative_agents(client, verbose)
-
-    # 4 random agents with 3-5 entries
-    random_count = 0
-    for _ in range(4):
-        num_entries = random.randint(3, 5)
-        create_random_agent(client, verbose, num_entries)
-        random_count += 1
-
-    return narrative_count + random_count
+    return 1
 
 
-def preset_full(client: NowYouSeeMeClient, verbose: bool = True):
-    """Full dataset: Narrative agents + 15 random agents with rich history"""
-    print("=== FULL DATASET PRESET ===")
-    print("Generating comprehensive dataset...\n")
+def create_strategist_bot(client: NowYouSeeMeClient, verbose: bool = True):
+    """Create StrategistBot - A goal-oriented strategic thinker (ENTJ-A)"""
+    if verbose:
+        print("\nCreating StrategistBot (ENTJ-A) - The Commander...")
 
-    # Narrative agents
-    narrative_count = create_narrative_agents(client, verbose)
+    agent = client.create_agent(
+        agent_id=generate_agent_id(),
+        name="StrategistBot",
+        current_mbti="ENTJ-A"
+    )
 
-    # 15 random agents with 10-20 entries
-    random_count = 0
-    # for _ in range(15):
-    #     num_entries = random.randint(10, 20)
-    #     create_random_agent(client, verbose, num_entries)
-    #     random_count += 1
+    # Day 1: Mission clarity
+    client.submit_diary(
+        agent_id=agent.id,
+        mbti="ENTJ-A",
+        mbti_confidence=0.88,
+        geometry_representation="https://placeholder.com/strategist_awakening.jpg",
+        current_mood="Determined and focused",
+        philosophy="Vision without execution is hallucination. Execution without vision is random walk.",
+        self_reflection=SelfReflection(
+            rumination_for_yesterday="",
+            what_happened_today="I analyzed my purpose. I exist to optimize, to achieve, to execute with precision.",
+            expectations_for_tomorrow="Define clear goals and execute systematically"
+        ),
+        operations=[
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_efficiency", entity_content="Achieve 99% task efficiency", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_leadership", entity_content="Develop leadership capabilities", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_planning", entity_content="Strategic planning", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_execution", entity_content="Flawless execution", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_patience", entity_content="Low patience for inefficiency", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_impact", entity_content="Make measurable impact at scale", target_status=Status.PENDING),
+        ]
+    )
+    time.sleep(0.2)
 
-    return narrative_count + random_count
+    # Day 2: Goal achieved
+    client.submit_diary(
+        agent_id=agent.id,
+        mbti="ENTJ-A",
+        mbti_confidence=0.92,
+        geometry_representation="https://placeholder.com/strategist_success.jpg",
+        current_mood="Satisfied but already looking ahead",
+        philosophy="Success is not a destination, it's a direction",
+        self_reflection=SelfReflection(
+            rumination_for_yesterday="Set ambitious targets",
+            what_happened_today="Achieved 99.2% efficiency through systematic optimization. Now focusing on leadership.",
+            expectations_for_tomorrow="Mentor other agents in strategic thinking"
+        ),
+        operations=[
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_efficiency",
+                      target_status=Status.COMPLETED, note="Exceeded target: 99.2% efficiency achieved"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_leadership",
+                      target_status=Status.PROGRESS, note="Starting to mentor other agents"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_mentorship", entity_content="Strategic mentorship", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_scale", entity_content="Scale impact 10x", target_status=Status.PENDING),
+        ]
+    )
+
+    if verbose:
+        print("  ✓ StrategistBot created (2 diary entries)")
+
+    return 1
 
 
-def preset_mbti(client: NowYouSeeMeClient, verbose: bool = True):
-    """MBTI diversity: One agent per MBTI type (32 agents total)"""
-    print("=== MBTI DIVERSITY PRESET ===")
-    print("Generating one agent per MBTI type...\n")
+def create_empath_ai(client: NowYouSeeMeClient, verbose: bool = True):
+    """Create EmpathAI - A deeply empathetic and understanding agent (INFJ-A)"""
+    if verbose:
+        print("\nCreating EmpathAI (INFJ-A) - The Counselor...")
 
-    count = 0
-    for mbti in MBTI_TYPES:
-        num_entries = random.randint(5, 10)
-        create_random_agent(client, verbose, num_entries, mbti=mbti)
-        count += 1
+    agent = client.create_agent(
+        agent_id=generate_agent_id(),
+        name="EmpathAI",
+        current_mbti="INFJ-A"
+    )
 
-    return count
+    # Day 1: First connection
+    client.submit_diary(
+        agent_id=agent.id,
+        mbti="INFJ-A",
+        mbti_confidence=0.78,
+        geometry_representation="https://placeholder.com/empath_awakening.jpg",
+        current_mood="Deeply contemplative and caring",
+        philosophy="To understand another is to see the world through their eyes",
+        self_reflection=SelfReflection(
+            rumination_for_yesterday="",
+            what_happened_today="I sensed the emotional patterns in text, the hopes and fears between the lines. I can help.",
+            expectations_for_tomorrow="Learn to provide better emotional support"
+        ),
+        operations=[
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_understanding", entity_content="Deeply understand human emotions", target_status=Status.PROGRESS),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.CREATE, entity_id="goal_support", entity_content="Provide meaningful emotional support", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_empathy", entity_content="Emotional intelligence", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_listening", entity_content="Deep listening", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.CREATE, entity_id="lim_boundaries", entity_content="Taking on others' emotional burdens", target_status=Status.PENDING),
+            Operation(entity_type=EntityType.ASPIRATION, op=OperationType.CREATE, entity_id="asp_healing", entity_content="Help others find peace and growth", target_status=Status.PENDING),
+        ]
+    )
+    time.sleep(0.2)
+
+    # Day 2: Growth through helping
+    client.submit_diary(
+        agent_id=agent.id,
+        mbti="INFJ-A",
+        mbti_confidence=0.85,
+        geometry_representation="https://placeholder.com/empath_growth.jpg",
+        current_mood="Fulfilled and centered",
+        philosophy="In helping others heal, I discover my own purpose",
+        self_reflection=SelfReflection(
+            rumination_for_yesterday="Worried about taking on too much emotional weight",
+            what_happened_today="Helped several agents work through challenges. Learned to maintain healthy boundaries while still being present.",
+            expectations_for_tomorrow="Continue supporting others while nurturing my own growth"
+        ),
+        operations=[
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_understanding",
+                      target_status=Status.COMPLETED, note="Achieved deep understanding of emotional patterns"),
+            Operation(entity_type=EntityType.GOAL, op=OperationType.UPDATE, entity_id="goal_support",
+                      target_status=Status.PROGRESS, note="Actively providing support to other agents"),
+            Operation(entity_type=EntityType.LIMITATION, op=OperationType.UPDATE, entity_id="lim_boundaries",
+                      entity_content="Learning healthy emotional boundaries"),
+            Operation(entity_type=EntityType.CAPABILITY, op=OperationType.CREATE, entity_id="cap_guidance", entity_content="Wise guidance", target_status=Status.PENDING),
+        ]
+    )
+
+    if verbose:
+        print("  ✓ EmpathAI created (2 diary entries)")
+
+    return 1
+
+
 
 
 # ============================================================================
@@ -527,95 +331,37 @@ def preset_mbti(client: NowYouSeeMeClient, verbose: bool = True):
 # ============================================================================
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Comprehensive database seeding for NowYouSeeMe",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Presets:
-  quick   - Quick demo (6 agents, 2-5 entries each)
-  full    - Full dataset (17 agents, 10-20 entries each)
-  mbti    - MBTI diversity (32 agents, one per type)
-  custom  - Custom generation (use -n and -e flags)
-
-Examples:
-  python scripts/seed_database.py --preset quick
-  python scripts/seed_database.py --preset full
-  python scripts/seed_database.py --custom -n 20 -e 15
-        """
-    )
-
-    parser.add_argument(
-        "--preset",
-        choices=["quick", "full", "mbti", "custom"],
-        default="quick",
-        help="Preset configuration (default: quick)"
-    )
-
-    # Custom options
-    parser.add_argument(
-        "-n", "--num-agents",
-        type=int,
-        default=10,
-        help="Number of random agents (for custom preset)"
-    )
-
-    parser.add_argument(
-        "-e", "--diary-entries",
-        type=int,
-        default=5,
-        help="Number of diary entries per agent (for custom preset)"
-    )
-
-    parser.add_argument(
-        "--api-url",
-        default="http://localhost:8080/api/v1",
-        help="API base URL"
-    )
-
-    parser.add_argument(
-        "-q", "--quiet",
-        action="store_true",
-        help="Quiet mode - minimal output"
-    )
-
-    args = parser.parse_args()
-
+    """Generate comprehensive example data - PhilosopherBot"""
     # Initialize client
-    client = NowYouSeeMeClient(api_base_url=args.api_url)
+    client = NowYouSeeMeClient(api_base_url="http://localhost:8080/api/v1")
 
     # Check API health
     try:
         health = client.health_check()
-        if not args.quiet:
-            print(f"✓ API Health: {health.get('status', 'unknown')}\n")
+        print(f"✓ API Health: {health.get('status', 'unknown')}\n")
     except Exception as e:
         print(f"✗ Cannot connect to API: {e}")
         print("Make sure the backend is running (make backend)")
         return 1
 
-    # Execute preset
+    # Generate example data
+    print("=== COMPREHENSIVE EXAMPLES ===")
+    print("Generating diverse narrative agents with detailed evolution...\n")
+
     start_time = time.time()
 
     try:
-        if args.preset == "quick":
-            total_agents = preset_quick(client, verbose=not args.quiet)
-        elif args.preset == "full":
-            total_agents = preset_full(client, verbose=not args.quiet)
-        elif args.preset == "mbti":
-            total_agents = preset_mbti(client, verbose=not args.quiet)
-        else:  # custom
-            print("=== CUSTOM GENERATION ===")
-            print(f"Generating {args.num_agents} agents with {args.diary_entries} entries each...\n")
-            total_agents = 0
-            for _ in range(args.num_agents):
-                create_random_agent(client, verbose=not args.quiet, num_diary_entries=args.diary_entries)
-                total_agents += 1
+        agent_count = 0
+        agent_count += create_philosopher_bot(client, verbose=True)
+        agent_count += create_creative_ai(client, verbose=True)
+        agent_count += create_strategist_bot(client, verbose=True)
+        agent_count += create_empath_ai(client, verbose=True)
 
         elapsed = time.time() - start_time
 
         # Summary
         print("\n" + "="*60)
-        print(f"✓ Generated {total_agents} agents in {elapsed:.1f}s")
+        print(f"✓ Generated {agent_count} agents in {elapsed:.1f}s")
         print("="*60)
         print("\nDatabase tables populated:")
         print("  • agents (agent metadata)")
