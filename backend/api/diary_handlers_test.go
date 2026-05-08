@@ -50,9 +50,9 @@ func cleanupTestDB(t *testing.T, store *storage.PostgresStore) {
 	// Clean up all test data
 	_, err := store.GetDB().Exec("DELETE FROM events WHERE agent_id LIKE 'test_%'")
 	require.NoError(t, err)
-	_, err = store.GetDB().Exec("DELETE FROM agent_state_snapshots WHERE agent_id LIKE 'test_%'")
+	_, err = store.GetDB().Exec("DELETE FROM agent_snapshots_view WHERE agent_id LIKE 'test_%'")
 	require.NoError(t, err)
-	_, err = store.GetDB().Exec("DELETE FROM agent_diary_versions WHERE agent_id LIKE 'test_%'")
+	_, err = store.GetDB().Exec("DELETE FROM diary_submissions WHERE agent_id LIKE 'test_%'")
 	require.NoError(t, err)
 	_, err = store.GetDB().Exec("DELETE FROM agents WHERE id LIKE 'test_%'")
 	require.NoError(t, err)

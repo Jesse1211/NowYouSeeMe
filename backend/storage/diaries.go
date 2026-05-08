@@ -27,7 +27,7 @@ func (s *PostgresStore) insertDiaryVersionTx(tx *sql.Tx, agentID string, payload
 	}
 
 	query := `
-		INSERT INTO agent_diary_versions (id, agent_id, raw_payload, created_at)
+		INSERT INTO diary_submissions (id, agent_id, raw_payload, created_at)
 		VALUES ($1, $2, $3, $4)
 	`
 

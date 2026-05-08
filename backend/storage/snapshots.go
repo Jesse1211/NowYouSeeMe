@@ -17,7 +17,7 @@ func (s *PostgresStore) GetSnapshot(agentID string) (*models.AgentSnapshotResult
 func (s *PostgresStore) getSnapshotTx(tx *sql.Tx, agentID string) (*models.AgentSnapshotResult, error) {
 	query := `
 		SELECT agent_id, last_event_sequence, updated_at, state
-		FROM agent_state_snapshots
+		FROM agent_snapshots_view
 		WHERE agent_id = $1
 	`
 
@@ -63,7 +63,7 @@ func (s *PostgresStore) upsertSnapshotTx(tx *sql.Tx, agentID string, state *mode
 	}
 
 	query := `
-		INSERT INTO agent_state_snapshots (agent_id, last_event_sequence, updated_at, state)
+		INSERT INTO agent_snapshots_view (agent_id, last_event_sequence, updated_at, state)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (agent_id)
 		DO UPDATE SET
