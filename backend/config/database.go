@@ -2,11 +2,9 @@ package config
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
+	"nowyouseeme/internal/database"
 	"os"
-
-	_ "github.com/lib/pq"
 )
 
 // DBConfig holds database connection parameters
@@ -32,35 +30,23 @@ func LoadDBConfig() *DBConfig {
 	}
 }
 
-// ConnectDB establishes PostgreSQL connection
+// ConnectDB establishes PostgreSQL connection using the internal database client
 func ConnectDB(config *DBConfig) (*sql.DB, error) {
-	// Build connection string - omit password if empty
-	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s dbname=%s sslmode=%s",
-		config.Host, config.Port, config.User, config.DBName, config.SSLMode,
-	)
-
-	// Only add password if not empty
-	if config.Password != "" {
-		connStr = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			config.Host, config.Port, config.User, config.Password, config.DBName, config.SSLMode,
-		)
+	// Convert to internal database config format
+	dbConfig := database.PostgresConfig{
+		Host:     config.Host,
+		Port:     config.Port,
+		User:     config.User,
+		Password: config.Password,
+		DBName:   config.DBName,
+		SSLMode:  config.SSLMode,
 	}
 
-	db, err := sql.Open("postgres", connStr)
+	// Use the new PostgreSQL client
+	db, err := database.NewPostgresClient(dbConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, err
 	}
-
-	// Verify connection
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	// Set connection pool settings
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
 
 	log.Printf("Connected to PostgreSQL database: %s", config.DBName)
 	return db, nil
