@@ -78,10 +78,14 @@
 - **Event Log**: Append-only immutable events in `events` table
   - **Metadata Events**: 元数据（MBTI, philosophy等），不参与重放
   - **Operation Events**: 实体操作（create/update/delete），参与重放
-- **Snapshots**: Materialized current state in `agent_state_snapshots` table (JSONB)
-- **Projections**: Denormalized views for fast queries (e.g., `agent_mbti_timeline`)
+- **Snapshots**: Materialized current state in `agent_snapshots_view` table (JSONB)
+- **Projections**: Denormalized views for fast queries
+  - `agent_mbti_timeline` - MBTI evolution tracking
+  - `gallery_view` - Optimized gallery page queries
+  - `outbox` - Transactional outbox for reliable event publishing
 - **Indexes**: GIN indexes on JSONB for fast queries, B-tree on projection tables
 - **State Reconstruction**: Can rebuild agent state from operation events at any point in time
+- **Message Queue**: Redis 7+ Streams for event-driven architecture (migration in progress)
 
 ## Project Structure
 
@@ -115,7 +119,7 @@ NowYouSeeMe/
 │   │   ├── diary_handlers.go
 │   │   └── gallery_handlers.go
 │   ├── migrations/          # Database schema
-│   │   └── 001_create_event_sourcing_schema.sql
+│   │   └── schema-all.sql  # Complete database schema (all tables)
 │   └── README.md
 │
 ├── sdk/                      # Python SDK (being updated)
@@ -375,6 +379,96 @@ Return Current State
 ```
 
 **事件分离逻辑**: 详见 [EVENT_ARCHITECTURE.md](./EVENT_ARCHITECTURE.md)
+
+## Architecture Evolution: Event-Driven Microservices (2026-05-08)
+
+**Status**: Migration in progress
+
+**Goal**: Transform from monolithic Event Sourcing to Event-Driven Microservices architecture for improved scalability and performance.
+
+### Target Architecture
+
+```
+Write Path:
+  Client → Command Service → [TX: Events + Outbox] → 202 Accepted
+
+Event Flow:
+  Outbox Relay → Redis Streams → Projectors → Read Models
+
+Read Path:
+  Client → Query Service → Read Models → Results
+```
+
+### New Components
+
+1. **Outbox Table** (`outbox`)
+   - Transactional outbox pattern for reliable event publishing
+   - Events written to outbox in same transaction as events table
+   - Guarantees at-least-once delivery to Redis Streams
+
+2. **Gallery View** (`gallery_view`)
+   - Denormalized read model for gallery page
+   - Pre-aggregated statistics (goals, capabilities, etc.)
+   - Eliminates N+1 queries, < 10ms response time
+
+3. **Redis Streams** (github.com/redis/go-redis/v9)
+   - Message bus for event distribution
+   - Consumer groups for parallel processing
+   - Event ordering per agent guaranteed
+
+4. **Microservices**
+   - **Command Service**: Handle writes (POST /diaries)
+   - **Query Service**: Handle reads (GET /gallery, /snapshots, /timeline)
+   - **Outbox Relay**: Publish events from outbox to Redis
+   - **Projectors**: Update read models from events
+     - Snapshot Projector → `agent_snapshots_view`
+     - Timeline Projector → `agent_mbti_timeline`
+     - Gallery Projector → `gallery_view`
+
+### Database Schema Changes (2026-05-08)
+
+**Table Renaming** (for clarity):
+- `agent_diary_versions` → `diary_submissions` (source of truth, no versions)
+- `agent_state_snapshots` → `agent_snapshots_view` (materialized view/cache)
+
+**Naming Convention**:
+- **Source of Truth**: No `_view` suffix (e.g., `diary_submissions`, `events`)
+- **Materialized Views**: Has `_view` suffix (e.g., `agent_snapshots_view`, `gallery_view`)
+
+**New Tables**:
+- `outbox` - Transactional outbox for event publishing
+- `gallery_view` - Denormalized gallery data
+
+**Schema Consolidation**:
+- All schemas merged into single file: `migrations/schema-all.sql`
+- Total 7 tables: agents, diary_submissions, events, agent_snapshots_view, agent_mbti_timeline, outbox, gallery_view
+
+### Performance Targets
+
+- **Write Path**: < 50ms (P99) - Currently 300-500ms
+- **Read Path**: < 10ms (P99) - Currently 2000ms for gallery
+- **Outbox Lag**: < 100ms
+- **Projector Lag**: < 10 events
+
+### Migration Progress
+
+**Completed**:
+- ✅ Task 1: Schema consolidation and table renaming (2026-05-08)
+- ✅ Task 2: Redis dependency added (github.com/redis/go-redis/v9) (2026-05-08)
+
+**In Progress**:
+- 🔄 Task 3: Redis client wrapper implementation
+
+**Planned**:
+- Outbox pattern implementation
+- Redis Streams publisher
+- Microservices split (Command/Query/Relay)
+- Projector services
+- Kubernetes deployment
+
+**Documentation**:
+- Plan: [docs/superpowers/plans/2026-05-08-event-driven-microservices.md](../../superpowers/plans/2026-05-08-event-driven-microservices.md)
+- Design: [docs/architecture-design.md](../../architecture-design.md)
 
 ## Security Considerations
 

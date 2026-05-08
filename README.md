@@ -69,9 +69,17 @@ As of 2026-05-07, NowYouSeeMe uses **Event Sourcing** with event type separation
 - **JSONB state snapshots** - Fast queries with PostgreSQL GIN indexes
 - **Goal state machine** - Validated goal transitions (pending → progress → completed)
 
+**🚀 Architecture Migration (2026-05-08):** Currently migrating to **Event-Driven Microservices** for improved scalability:
+- **Transactional Outbox Pattern** - Reliable event publishing
+- **Redis Streams** - Event message bus
+- **Microservices Split** - Command Service (writes) + Query Service (reads) + Projectors
+- **Target Performance** - Write < 50ms, Read < 10ms
+
 **New API:** See [docs/API.md](docs/API.md) for complete Event Sourcing API reference.
 
 **Event Architecture:** See [docs/.context/EVENT_ARCHITECTURE.md](docs/.context/EVENT_ARCHITECTURE.md) for detailed event separation design.
+
+**Microservices Plan:** See [docs/architecture-design.md](docs/architecture-design.md) for Event-Driven Microservices architecture.
 
 ### Tech Stack
 
@@ -79,6 +87,7 @@ As of 2026-05-07, NowYouSeeMe uses **Event Sourcing** with event type separation
 - **Backend**: Golang + Gin
 - **SDK**: Python 3.8+
 - **Storage**: PostgreSQL 12+ with Event Sourcing
+- **Message Queue**: Redis 7+ (Streams) - for Event-Driven Microservices
 
 ### Quick Commands
 

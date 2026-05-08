@@ -187,6 +187,80 @@ instead of embedding Base64 data in API requests.
 - New file: backend/validation/agent_id.go
 - Modified: postgres.go, event_sourcing.go, diary.go, event.go
 
+### ADR-008: Event-Driven Microservices Architecture
+
+**Status**: In Progress
+
+**Date**: 2026-05-08
+
+**Context**: Current monolithic Event Sourcing architecture has performance issues:
+- Write path: 300-500ms (due to synchronous snapshot updates)
+- Read path: 2000ms for gallery (N+1 queries)
+- Tight coupling between write and read paths
+- Difficult to scale independently
+
+**Decision**: Migrate to Event-Driven Microservices with CQRS separation:
+
+1. **Transactional Outbox Pattern**
+   - Write events to `outbox` table in same transaction
+   - Guarantees at-least-once delivery
+   - Decouples event creation from publishing
+
+2. **Redis Streams Message Bus**
+   - Event distribution to projectors
+   - Consumer groups for parallel processing
+   - Event ordering per aggregate (agent_id)
+
+3. **Microservices Split**
+   - Command Service: Handle writes, return immediately
+   - Query Service: Handle reads from optimized views
+   - Outbox Relay: Publish events to Redis Streams
+   - Projectors: Update read models asynchronously
+
+4. **Denormalized Read Models**
+   - `gallery_view`: Pre-aggregated gallery data
+   - Eliminates N+1 queries
+   - Updated by Gallery Projector
+
+5. **Table Naming Convention**
+   - Source of Truth: No `_view` suffix (e.g., `diary_submissions`, `events`)
+   - Materialized Views/Caches: Has `_view` suffix (e.g., `agent_snapshots_view`, `gallery_view`)
+   - Clear distinction between event store and projections
+
+**Consequences**:
+- **Pros**:
+  - Write performance: < 50ms (6x improvement)
+  - Read performance: < 10ms (200x improvement)
+  - Independent scaling of services
+  - Eventual consistency acceptable for this use case
+  - Clear separation of concerns
+- **Cons**:
+  - Increased complexity (more services to manage)
+  - Eventual consistency (stale reads possible)
+  - More infrastructure required (Redis, multiple services)
+  - Distributed tracing needed for debugging
+
+**Implementation Progress**:
+- ✅ Phase 1: Infrastructure setup (outbox table, gallery_view table, Redis dependency)
+- 🔄 Phase 2: Outbox Relay implementation (in progress)
+- ⏳ Phase 3: Projectors implementation
+- ⏳ Phase 4: Microservices split (Command/Query services)
+- ⏳ Phase 5: Kubernetes deployment
+- ⏳ Phase 6: Monitoring and optimization
+
+**Key Changes**:
+- Renamed `agent_diary_versions` → `diary_submissions` (clearer naming)
+- Renamed `agent_state_snapshots` → `agent_snapshots_view` (emphasize it's a view/cache)
+- Added `outbox` table for Transactional Outbox Pattern
+- Added `gallery_view` table for denormalized read model
+- Added Redis dependency: `github.com/redis/go-redis/v9 v9.19.0`
+- Consolidated all schemas into single file: `migrations/schema-all.sql`
+
+**References**:
+- docs/architecture-design.md - Detailed microservices architecture
+- docs/superpowers/plans/2026-05-08-event-driven-microservices.md - Implementation plan
+- backend/migrations/schema-all.sql - Complete database schema
+
 ## Code Patterns
 
 ### Backend (Golang) - API Handlers
@@ -455,3 +529,49 @@ VITE_API_BASE_URL=https://api.nowyouseeme.com/api/v1
 - Documented all ADRs (Architecture Decision Records)
 
 **See:** docs/superpowers/specs/2026-05-04-documentation-update-design.md
+
+### Phase 5: Event-Driven Microservices Migration (2026-05-08)
+
+**Status**: In Progress
+
+**Goal**: Migrate to Event-Driven Microservices architecture for improved scalability and performance.
+
+**Completed Tasks**:
+
+1. **Schema Consolidation and Table Renaming** (2026-05-08)
+   - Merged all migrations into single file: `schema-all.sql`
+   - Renamed tables for clarity:
+     - `agent_diary_versions` → `diary_submissions`
+     - `agent_state_snapshots` → `agent_snapshots_view`
+   - Established naming convention:
+     - Source of Truth: No `_view` suffix
+     - Materialized Views: Has `_view` suffix
+   - Added new tables:
+     - `outbox` - Transactional outbox for event publishing
+     - `gallery_view` - Denormalized read model for gallery page
+
+2. **Redis Dependency** (2026-05-08)
+   - Added `github.com/redis/go-redis/v9 v9.19.0`
+   - Preparation for Redis Streams message bus
+
+**In Progress**:
+- Task 3: Redis client wrapper implementation
+
+**Architecture Changes**:
+- Implementing Transactional Outbox Pattern
+- Adding Redis Streams for event distribution
+- Splitting into microservices:
+  - Command Service (writes)
+  - Query Service (reads)
+  - Outbox Relay (event publishing)
+  - Projectors (read model updates)
+
+**Performance Targets**:
+- Write: < 50ms (P99) - down from 300-500ms
+- Read: < 10ms (P99) - down from 2000ms for gallery
+- Outbox Lag: < 100ms
+- Projector Lag: < 10 events
+
+**See:**
+- Plan: docs/superpowers/plans/2026-05-08-event-driven-microservices.md
+- Design: docs/architecture-design.md
